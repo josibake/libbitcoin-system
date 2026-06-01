@@ -71,6 +71,25 @@ BOOST_AUTO_TEST_CASE(script__pattern__pay_null_data_81_bytes__non_standard)
     BOOST_REQUIRE(instance.pattern() == chain::script_pattern::non_standard);
 }
 
+// pay_witness_v1_taproot
+
+BOOST_AUTO_TEST_CASE(script__pattern__pay_witness_v1_taproot_bip341__taproot)
+{
+    // bitcoin/bips bip-0341/wallet-test-vectors.json scriptPubKey[0].
+    const script instance(base16_chunk("512053a1f6e454df1aa2776a2814a721372d6258050de330b3c6d10ee8f4e0dda343"), false);
+    BOOST_REQUIRE(instance.is_valid());
+    BOOST_REQUIRE(instance.output_pattern() == chain::script_pattern::pay_witness_v1_taproot);
+    BOOST_REQUIRE(instance.pattern() == chain::script_pattern::pay_witness_v1_taproot);
+}
+
+BOOST_AUTO_TEST_CASE(script__to_pay_witness_taproot_pattern__valid_key__expected)
+{
+    constexpr auto key = base16_array("53a1f6e454df1aa2776a2814a721372d6258050de330b3c6d10ee8f4e0dda343");
+
+    const script instance(script::to_pay_witness_taproot_pattern(key));
+    BOOST_REQUIRE_EQUAL(encode_base16(instance.to_data(false)), "512053a1f6e454df1aa2776a2814a721372d6258050de330b3c6d10ee8f4e0dda343");
+}
+
 // pay_multisig
 
 static const std::string script_0_of_3_multisig = "0 [03dcfd9e580de35d8c2060d76dbf9e5561fe20febd2e64380e860a4d59f15ac864] [02440e0304bf8d32b2012994393c6a477acf238dd6adb4c3cef5bfa72f30c9861c] [03624505c6cc3967352cce480d8550490dd68519cd019066a4c302fdfb7d1c9934] 3 checkmultisig";
