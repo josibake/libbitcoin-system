@@ -177,6 +177,9 @@ BC_API bool is_even_key(const ec_compressed& point) NOEXCEPT;
 /// Fast detection of compressed public key structure.
 BC_API bool is_compressed_key(const data_slice& point) NOEXCEPT;
 
+/// Fast detection of compressed public key sign byte.
+BC_API bool is_compressed_key_sign(uint8_t value) NOEXCEPT;
+
 /// Fast detection of uncompressed public key structure.
 BC_API bool is_uncompressed_key(const data_slice& point) NOEXCEPT;
 

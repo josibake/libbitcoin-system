@@ -66,4 +66,24 @@ BOOST_AUTO_TEST_CASE(secp256k1__secret_to_public__uncompressed_positive__expecte
     BOOST_REQUIRE_EQUAL(point, uncompressed1);
 }
 
+BOOST_AUTO_TEST_CASE(secp256k1__is_compressed_key_sign__even_sign__true)
+{
+    BOOST_REQUIRE(is_compressed_key_sign(ec_even_sign));
+}
+
+BOOST_AUTO_TEST_CASE(secp256k1__is_compressed_key_sign__odd_sign__true)
+{
+    BOOST_REQUIRE(is_compressed_key_sign(ec_odd_sign));
+}
+
+BOOST_AUTO_TEST_CASE(secp256k1__is_compressed_key_sign__uncompressed_sign__false)
+{
+    BOOST_REQUIRE(!is_compressed_key_sign(ec_uncompressed_sign));
+}
+
+BOOST_AUTO_TEST_CASE(secp256k1__is_compressed_key_sign__zero__false)
+{
+    BOOST_REQUIRE(!is_compressed_key_sign(0x00));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

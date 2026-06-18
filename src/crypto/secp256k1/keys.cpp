@@ -102,8 +102,12 @@ bool is_compressed_key(const data_slice& point) NOEXCEPT
     if (size != ec_compressed_size)
         return false;
 
-    const auto first = point.front();
-    return first == ec_even_sign || first == ec_odd_sign;
+    return is_compressed_key_sign(point.front());
+}
+
+bool is_compressed_key_sign(uint8_t value) NOEXCEPT
+{
+    return value == ec_even_sign || value == ec_odd_sign;
 }
 
 bool is_uncompressed_key(const data_slice& point) NOEXCEPT
