@@ -153,6 +153,7 @@ src_libbitcoin_system_la_SOURCES = \
     src/wallet/addresses/bitcoin_uri.cpp \
     src/wallet/addresses/payment_address.cpp \
     src/wallet/addresses/qr_code.cpp \
+    src/wallet/addresses/silent_payment.cpp \
     src/wallet/addresses/stealth_address.cpp \
     src/wallet/addresses/stealth_receiver.cpp \
     src/wallet/addresses/stealth_sender.cpp \
@@ -453,6 +454,8 @@ test_libbitcoin_system_test_SOURCES = \
     test/wallet/addresses/checked.cpp \
     test/wallet/addresses/payment_address.cpp \
     test/wallet/addresses/qr_code.cpp \
+    test/wallet/addresses/silent_payment.cpp \
+    test/wallet/addresses/silent_payment_vectors.hpp \
     test/wallet/addresses/stealth_address.cpp \
     test/wallet/addresses/stealth_receiver.cpp \
     test/wallet/addresses/stealth_sender.cpp \
@@ -1002,6 +1005,7 @@ include_bitcoin_system_wallet_addresses_HEADERS = \
     include/bitcoin/system/wallet/addresses/checked.hpp \
     include/bitcoin/system/wallet/addresses/payment_address.hpp \
     include/bitcoin/system/wallet/addresses/qr_code.hpp \
+    include/bitcoin/system/wallet/addresses/silent_payment.hpp \
     include/bitcoin/system/wallet/addresses/stealth_address.hpp \
     include/bitcoin/system/wallet/addresses/stealth_receiver.hpp \
     include/bitcoin/system/wallet/addresses/stealth_sender.hpp \
@@ -1054,4 +1058,3 @@ target_examples = \
     examples/libbitcoin-system-examples
 
 examples: ${target_examples}
-
