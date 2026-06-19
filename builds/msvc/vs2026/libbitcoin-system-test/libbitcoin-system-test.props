@@ -39,14 +39,17 @@
 
   <PropertyGroup Condition="'$(DefaultLinkage)' == 'dynamic'">
     <Linkage-secp256k1>dynamic</Linkage-secp256k1>
+    <Linkage-ultrafast>static</Linkage-ultrafast>
     <Linkage-libbitcoin-system>dynamic</Linkage-libbitcoin-system>
   </PropertyGroup>
   <PropertyGroup Condition="'$(DefaultLinkage)' == 'ltcg'">
     <Linkage-secp256k1>ltcg</Linkage-secp256k1>
+    <Linkage-ultrafast>ltcg</Linkage-ultrafast>
     <Linkage-libbitcoin-system>ltcg</Linkage-libbitcoin-system>
   </PropertyGroup>
   <PropertyGroup Condition="'$(DefaultLinkage)' == 'static'">
     <Linkage-secp256k1>static</Linkage-secp256k1>
+    <Linkage-ultrafast>static</Linkage-ultrafast>
     <Linkage-libbitcoin-system>static</Linkage-libbitcoin-system>
   </PropertyGroup>
 

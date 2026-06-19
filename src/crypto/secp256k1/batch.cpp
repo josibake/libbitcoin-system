@@ -20,9 +20,11 @@
 
 #include <atomic>
 #include <algorithm>
+#include <cstdlib>
 #include <numeric>
 #include <shared_mutex>
 #include <span>
+#include <bitcoin/system/have.hpp>
 #if defined(HAVE_ULTRAFAST)
     #include <ufsecp_libbitcoin.h>
 #endif

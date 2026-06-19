@@ -16,8 +16,8 @@
 #                               Default: OFF
 # -Denable-shani=<ON/OFF>     Use Intel/ARM SHA Extensions.
 #                               Default: OFF
-# -Dwith-ultrafast=<ON/OFF>   Use shrec/UltrafastSecp256k1.
-#                               Default: OFF
+# -Dwith-ultrafast=ON         Use shrec/UltrafastSecp256k1. Required.
+#                               Default: ON
 # -Dwith-secp256k1=<ON/OFF>   Use bitcoin-core/secp256k1.
 #                               Default: ON
 # --build-boost               Build Boost libraries
@@ -66,7 +66,7 @@ if [[ -z ${UltrafastSecp256k1_OWNER} ]]; then
     UltrafastSecp256k1_OWNER="shrec"
 fi
 if [[ -z ${UltrafastSecp256k1_TAG} ]]; then
-    UltrafastSecp256k1_TAG="main"
+    UltrafastSecp256k1_TAG="v4.3.0"
 fi
 
 if [[ -z ${libbitcoin_system_OWNER} ]]; then
@@ -459,8 +459,10 @@ main()
         "-DSECP256K1_BUILD_BENCH=OFF"
         "-DSECP256K1_BUILD_EXAMPLES=OFF"
         "-DSECP256K1_BUILD_JAVA=OFF"
+        "-DCMAKE_INSTALL_LIBDIR=lib"
         "-DUFSECP_BUILD_SHARED=OFF"
         "-DSECP256K1_BUILD_CABI=ON"
+        "-DSECP256K1_BUILD_LIBBITCOIN=ON"
         "-DSECP256K1_BUILD_CPU=ON"
         "-DSECP256K1_BUILD_SHIM=ON"
         "-DSECP256K1_BUILD_CUDA=ON"
@@ -501,6 +503,7 @@ main()
         export CPPFLAGS="${CPPFLAGS} ${UltrafastSecp256k1_FLAGS[@]}"
         build_cmake "UltrafastSecp256k1" "." "${PARALLEL}" "${UltrafastSecp256k1_OPTIONS[@]}" "${CONFIGURE_OPTIONS_CMAKE[@]}"
         install_cmake "UltrafastSecp256k1"
+        install_ultrafast_libbitcoin_bridge
         if [[ "${BUILD_POST_INSTALL_CLEAN}" == "yes" ]]; then
             clean_cmake "UltrafastSecp256k1"
         fi
@@ -892,6 +895,32 @@ install_cmake()
     msg_success "'${PROJECT}' installation complete."
 }
 
+install_ultrafast_libbitcoin_bridge()
+{
+    local PROJECT="UltrafastSecp256k1"
+    local BUILD_DIRECTORY=""
+
+    if [[ "${BUILD_OBJ_DIR_RELATIVE}" == "yes" ]]; then
+        BUILD_DIRECTORY="${BUILD_SRC_DIR}/${PROJECT}/${BUILD_OBJ_DIR}"
+    else
+        BUILD_DIRECTORY="${BUILD_OBJ_DIR}/${PROJECT}"
+    fi
+
+    create_directory "${PREFIX}/include/ufsecp"
+    create_directory "${PREFIX}/lib"
+
+    cp "${BUILD_SRC_DIR}/${PROJECT}/compat/libbitcoin_bridge/include/ufsecp_libbitcoin.h" \
+        "${PREFIX}/include/"
+    cp "${BUILD_SRC_DIR}/${PROJECT}/include/ufsecp/ufsecp_error.h" \
+        "${PREFIX}/include/ufsecp/"
+    cp "${BUILD_DIRECTORY}/include/ufsecp/ufsecp_version.h" \
+        "${PREFIX}/include/ufsecp/"
+    cp "${BUILD_DIRECTORY}/include/ufsecp/libufsecp.a" \
+        "${PREFIX}/lib/"
+
+    msg_warn "Installed UltrafastSecp256k1 libbitcoin bridge staging files pending upstream install rules."
+}
+
 test_cmake()
 {
     local PROJECT="$1"
@@ -1009,8 +1038,8 @@ help()
     msg "                              Default: OFF"
     msg "-Denable-shani=<ON/OFF>     Use Intel/ARM SHA Extensions."
     msg "                              Default: OFF"
-    msg "-Dwith-ultrafast=<ON/OFF>   Use shrec/UltrafastSecp256k1."
-    msg "                              Default: OFF"
+    msg "-Dwith-ultrafast=ON         Use shrec/UltrafastSecp256k1. Required."
+    msg "                              Default: ON"
     msg "-Dwith-secp256k1=<ON/OFF>   Use bitcoin-core/secp256k1."
     msg "                              Default: ON"
     msg "--build-boost               Build Boost libraries"

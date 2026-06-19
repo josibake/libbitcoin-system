@@ -169,10 +169,12 @@ AS_CASE([${enable_shared}], [yes], AC_DEFINE([BOOST_ALL_DYN_LINK]))
 AC_MSG_CHECKING([--with-ultrafast option])
 AC_ARG_WITH([ultrafast],
     AS_HELP_STRING([--with-ultrafast],
-        [Use shrec/UltrafastSecp256k1 library. @<:@default=no@:>@]),
+        [Use shrec/UltrafastSecp256k1 library. @<:@default=yes@:>@]),
     [with_ultrafast=$withval],
-    [with_ultrafast=no])
+    [with_ultrafast=yes])
 AC_MSG_RESULT([$with_ultrafast])
+AS_CASE([${with_ultrafast}], [no],
+    [AC_MSG_ERROR([libbitcoin-system requires --with-ultrafast for silent payment scanning.])])
 
 # Implement --with-secp256k1.
 #------------------------------------------------------------------------------
@@ -451,14 +453,15 @@ AS_CASE([${enable_isystem}],[yes],
 
 AC_MSG_NOTICE([secp256k1_BUILD_CPPFLAGS : ${secp256k1_BUILD_CPPFLAGS}])
 
-# Require ultrafast of at least version 4.0.0.0 and output ${ultrafast_CPPFLAGS/LIBS/PKG}.
+# Require ultrafast of at least version 4.3.0 and output ${ultrafast_CPPFLAGS/LIBS/PKG}.
 #------------------------------------------------------------------------------
 AS_CASE([${with_ultrafast}], [yes],
-    [PKG_CHECK_MODULES([ultrafast], [libultrafast >= 4.0.0.0], [],
+    [PKG_CHECK_MODULES([ultrafast], [secp256k1-fast >= 4.3.0], [],
         [
-          AC_MSG_ERROR([--with-ultrafast specified but libultrafast >= 4.0.0.0 was not found.])
+          AC_MSG_ERROR([--with-ultrafast specified but secp256k1-fast >= 4.3.0 was not found.])
         ])
-     AC_SUBST([ultrafast_PKG], ['libultrafast >= 4.0.0.0'])
+     AC_DEFINE([WITH_ULTRAFAST])
+     AC_SUBST([ultrafast_PKG], ['secp256k1-fast >= 4.3.0'])
      AC_SUBST([ultrafast_CPPFLAGS], [${ultrafast_CFLAGS}])
      AC_SUBST([ultrafast_ISYS_CPPFLAGS], [`echo ${ultrafast_CPPFLAGS} | $SED s/^-I/-isystem/g | $SED s/' -I'/' -isystem'/g`]])
      AC_MSG_NOTICE([ultrafast_CPPFLAGS : ${ultrafast_CPPFLAGS}])

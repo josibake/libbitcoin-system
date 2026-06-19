@@ -75,10 +75,14 @@ option( enable-avx2 "Use Intel AVX2 intrinsics." OFF )
 option( enable-avx512 "Use Intel AVX512 intrinsics." OFF )
 option( enable-sse41 "Use SSE4.1 hardware instructions." OFF )
 option( enable-shani "Use Intel/ARM SHA Extensions." OFF )
-option( with-ultrafast "Use shrec/UltrafastSecp256k1." OFF )
+option( with-ultrafast "Use shrec/UltrafastSecp256k1." ON )
 option( with-secp256k1 "Use bitcoin-core/secp256k1." ON )
 option( with-tests "Build tests." ON )
 option( with-examples "Build examples." ON )
+
+if ( NOT with-ultrafast )
+  message( FATAL_ERROR "libbitcoin-system requires secp256k1-fast for silent payment scanning." )
+endif()
 
 #------------------------------------------------------------------------------
 # Dependencies.
@@ -111,7 +115,26 @@ if ( with-secp256k1 )
 endif()
 
 if ( with-ultrafast )
-  find_package( secp256k1-fast 4.0.0.0 REQUIRED )
+  find_package( secp256k1-fast 4.3.0 REQUIRED )
+  find_package( Threads REQUIRED )
+  find_path( ufsecp_INCLUDE_DIR
+    NAMES
+      ufsecp_libbitcoin.h
+    REQUIRED
+  )
+  find_library( ufsecp_LIBRARY
+    NAMES
+      ufsecp
+    REQUIRED
+  )
+  if ( NOT TARGET ufsecp::ufsecp )
+    add_library( ufsecp::ufsecp UNKNOWN IMPORTED )
+    set_target_properties( ufsecp::ufsecp
+      PROPERTIES
+        IMPORTED_LOCATION "${ufsecp_LIBRARY}"
+        INTERFACE_LINK_LIBRARIES Threads::Threads
+    )
+  endif()
 endif()
 
 #------------------------------------------------------------------------------
@@ -320,6 +343,13 @@ target_include_directories( libbitcoin-system
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
     $<INSTALL_INTERFACE:include>
+  PRIVATE
+    ${ufsecp_INCLUDE_DIR}
+)
+
+target_compile_definitions( libbitcoin-system
+  PUBLIC
+    WITH_ULTRAFAST
 )
 
 target_link_libraries( libbitcoin-system
@@ -333,6 +363,7 @@ target_link_libraries( libbitcoin-system
     Boost::url
     $<$<BOOL:${with-secp256k1}>:libsecp256k1::secp256k1>
     $<$<BOOL:${with-ultrafast}>:secp256k1::fastsecp256k1>
+    ufsecp::ufsecp
 )
 
 set_target_properties( libbitcoin-system
