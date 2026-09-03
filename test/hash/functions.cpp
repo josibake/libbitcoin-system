@@ -78,6 +78,7 @@ BOOST_AUTO_TEST_CASE(functions__rmd160__text__expected)
 {
     const auto expected = rmd160_chunk(string);
     BOOST_CHECK_EQUAL(rmd160_chunk(data), expected);
+    BOOST_CHECK_EQUAL(rmd160_chunk(data_slice{ data }), expected);
     BOOST_CHECK_EQUAL(rmd160_chunk("foobar"), expected);
     BOOST_CHECK_EQUAL(rmd160_chunk(std::string{ "foobar" }), expected);
 }
@@ -124,6 +125,7 @@ BOOST_AUTO_TEST_CASE(functions__sha1__text__expected)
 {
     const auto expected = sha1_chunk(string);
     BOOST_CHECK_EQUAL(sha1_chunk(data), expected);
+    BOOST_CHECK_EQUAL(sha1_chunk(data_slice{ data }), expected);
     BOOST_CHECK_EQUAL(sha1_chunk("foobar"), expected);
     BOOST_CHECK_EQUAL(sha1_chunk(std::string{ "foobar" }), expected);
 }
@@ -170,6 +172,7 @@ BOOST_AUTO_TEST_CASE(functions__sha256__text__expected)
 {
     const auto expected = sha256_chunk(string);
     BOOST_CHECK_EQUAL(sha256_chunk(data), expected);
+    BOOST_CHECK_EQUAL(sha256_chunk(data_slice{ data }), expected);
     BOOST_CHECK_EQUAL(sha256_chunk("foobar"), expected);
     BOOST_CHECK_EQUAL(sha256_chunk(std::string{ "foobar" }), expected);
 }
@@ -293,6 +296,7 @@ BOOST_AUTO_TEST_CASE(functions__bitcoin_short__null_one__expected)
     BOOST_CHECK_EQUAL(bitcoin_short_hash(to_chunk(null_hash)), expected);
     BOOST_CHECK_EQUAL(bitcoin_short_chunk(null_hash), to_chunk(expected));
     BOOST_CHECK_EQUAL(bitcoin_short_chunk(to_chunk(null_hash)), to_chunk(expected));
+    BOOST_CHECK_EQUAL(bitcoin_short_chunk(data_slice{ null_hash }), to_chunk(expected));
 }
 
 // bitcoin_hash
@@ -315,6 +319,7 @@ BOOST_AUTO_TEST_CASE(functions__bitcoin__null_one__expected)
     BOOST_CHECK_EQUAL(bitcoin_hash(to_chunk(null_hash)), expected);
     BOOST_CHECK_EQUAL(bitcoin_chunk(null_hash), to_chunk(expected));
     BOOST_CHECK_EQUAL(bitcoin_chunk(to_chunk(null_hash)), to_chunk(expected));
+    BOOST_CHECK_EQUAL(bitcoin_chunk(data_slice{ null_hash }), to_chunk(expected));
 }
 
 // taproot tags

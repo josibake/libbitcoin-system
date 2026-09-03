@@ -74,6 +74,11 @@ INLINE data_chunk rmd160_chunk(const Type& data) NOEXCEPT
     return accumulator<rmd160>::hash_chunk(data);
 }
 
+INLINE data_chunk rmd160_chunk(const data_slice& data) NOEXCEPT
+{
+    return accumulator<rmd160>::hash_chunk(data.size(), data.data());
+}
+
 // sha1 (sha160) [script].
 template <typename Type>
 INLINE short_hash sha1_hash(const Type& data) NOEXCEPT
@@ -85,6 +90,11 @@ template <typename Type>
 INLINE data_chunk sha1_chunk(const Type& data) NOEXCEPT
 {
     return accumulator<sha160>::hash_chunk(data);
+}
+
+INLINE data_chunk sha1_chunk(const data_slice& data) NOEXCEPT
+{
+    return accumulator<sha160>::hash_chunk(data.size(), data.data());
 }
 
 // sha256 [script, chain, wallet].
@@ -117,6 +127,11 @@ INLINE data_chunk sha256_chunk(const Type& data) NOEXCEPT
     return accumulator<sha256>::hash_chunk(data);
 }
 
+INLINE data_chunk sha256_chunk(const data_slice& data) NOEXCEPT
+{
+    return accumulator<sha256>::hash_chunk(data.size(), data.data());
+}
+
 // sha512 [wallet].
 template <typename Type>
 INLINE long_hash sha512_hash(const Type& data) NOEXCEPT
@@ -144,6 +159,12 @@ template <typename Type>
 INLINE data_chunk bitcoin_short_chunk(const Type& data) NOEXCEPT
 {
     return accumulator<rmd160>::hash_chunk(accumulator<sha256>::hash(data));
+}
+
+INLINE data_chunk bitcoin_short_chunk(const data_slice& data) NOEXCEPT
+{
+    return accumulator<rmd160>::hash_chunk(
+        accumulator<sha256>::hash(data.size(), data.data()));
 }
 
 // Bitcoin hash (sha256(sha256)) [script, chain, wallet].
@@ -180,6 +201,11 @@ template <typename Type>
 INLINE data_chunk bitcoin_chunk(const Type& data) NOEXCEPT
 {
     return accumulator<sha256>::double_hash_chunk(data);
+}
+
+INLINE data_chunk bitcoin_chunk(const data_slice& data) NOEXCEPT
+{
+    return accumulator<sha256>::double_hash_chunk(data.size(), data.data());
 }
 
 // Taproot tagged hash.

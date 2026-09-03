@@ -88,12 +88,14 @@ template <typename Type>
 INLINE short_hash rmd160_hash(const Type& data) NOEXCEPT;
 template <typename Type>
 INLINE data_chunk rmd160_chunk(const Type& data) NOEXCEPT;
+INLINE data_chunk rmd160_chunk(const data_slice& data) NOEXCEPT;
 
 /// sha1 (sha160) [script].
 template <typename Type>
 INLINE short_hash sha1_hash(const Type& data) NOEXCEPT;
 template <typename Type>
 INLINE data_chunk sha1_chunk(const Type& data) NOEXCEPT;
+INLINE data_chunk sha1_chunk(const data_slice& data) NOEXCEPT;
 
 /// sha256 [script, wallet].
 template <typename Type>
@@ -104,6 +106,7 @@ INLINE hash_digest sha256_hash2(const data_slice& left,
     const data_slice& right) NOEXCEPT;
 template <typename Type>
 INLINE data_chunk sha256_chunk(const Type& data) NOEXCEPT;
+INLINE data_chunk sha256_chunk(const data_slice& data) NOEXCEPT;
 
 /// sha512 hash [wallet].
 template <typename Type>
@@ -119,6 +122,7 @@ template <typename Type>
 INLINE short_hash bitcoin_short_hash(const Type& data) NOEXCEPT;
 template <typename Type>
 INLINE data_chunk bitcoin_short_chunk(const Type& data) NOEXCEPT;
+INLINE data_chunk bitcoin_short_chunk(const data_slice& data) NOEXCEPT;
 
 /// Bitcoin hash (sha256(sha256)) [script, chain, wallet].
 template <typename Type>
@@ -130,6 +134,7 @@ INLINE hash_digest bitcoin_hash2(const data_slice& left,
     const data_slice& right) NOEXCEPT;
 template <typename Type>
 INLINE data_chunk bitcoin_chunk(const Type& data) NOEXCEPT;
+INLINE data_chunk bitcoin_chunk(const data_slice& data) NOEXCEPT;
 
 /// Taproot tagged hashing (use sha256t_writer for best performance).
 INLINE hash_digest tagged_hash(const std::string& tag,
