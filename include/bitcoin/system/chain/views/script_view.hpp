@@ -23,6 +23,7 @@
 #include <iterator>
 #include <bitcoin/system/chain/enums/magic_numbers.hpp>
 #include <bitcoin/system/chain/enums/opcode.hpp>
+#include <bitcoin/system/chain/operation.hpp>
 #include <bitcoin/system/constants.hpp>
 #include <bitcoin/system/data/data.hpp>
 #include <bitcoin/system/define.hpp>
@@ -40,9 +41,10 @@ public:
 
     constexpr operation_view() NOEXCEPT = default;
     constexpr operation_view(opcode code, const data_slice& data,
-        const data_slice& raw, size_t offset, bool underflow) NOEXCEPT
+        const data_slice& raw, size_t offset, size_t position,
+        bool underflow) NOEXCEPT
       : code_(code), data_(data), raw_(raw), offset_(offset),
-        underflow_(underflow)
+        position_(position), underflow_(underflow)
     {
     }
 
@@ -71,6 +73,21 @@ public:
         return ceilinged_add(offset_, raw_.size());
     }
 
+    constexpr size_t position() const NOEXCEPT
+    {
+        return position_;
+    }
+
+    constexpr bool is_underclaimed() const NOEXCEPT
+    {
+        return data_.size() > operation::opcode_to_maximum_size(code_);
+    }
+
+    constexpr bool is_oversized() const NOEXCEPT
+    {
+        return data_.size() > max_push_data_size;
+    }
+
     constexpr bool is_underflow() const NOEXCEPT
     {
         return underflow_;
@@ -81,6 +98,7 @@ private:
     data_slice data_{};
     data_slice raw_{};
     size_t offset_{};
+    size_t position_{};
     bool underflow_{ false };
 };
 
@@ -192,20 +210,22 @@ private:
         if (!read_size(size, code) || size > max_bytes || size > remaining())
         {
             const data_slice tail{ start, stop_ };
-            current_ = { opcode::op_verif, tail, tail, offset, true };
+            current_ = { opcode::op_verif, tail, tail, offset,
+                position_++, true };
             cursor_ = stop_;
             return;
         }
 
         const auto next = std::next(cursor_, size);
         current_ = { code, data_slice{ cursor_, next },
-            data_slice{ start, next }, offset, false };
+            data_slice{ start, next }, offset, position_++, false };
         cursor_ = next;
     }
 
     const uint8_t* begin_{};
     const uint8_t* cursor_{};
     const uint8_t* stop_{};
+    size_t position_{};
     operation_view current_{};
     bool terminal_{ true };
 };
@@ -220,9 +240,46 @@ public:
     using const_iterator = operation_view_iterator;
 
     constexpr script_view() NOEXCEPT = default;
-    constexpr explicit script_view(const data_slice& script) NOEXCEPT
-      : script_(script)
+    explicit script_view(const data_slice& script) NOEXCEPT
+      : script_(script), valid_(true)
     {
+        for (const auto& op: *this)
+        {
+            prevalid_ |= operation::is_success(op.code());
+            prefail_ |= operation::is_invalid(op.code());
+            roller_ |= operation::is_roller(op.code());
+            underflow_ |= op.is_underflow();
+        }
+    }
+
+    constexpr bool is_valid() const NOEXCEPT
+    {
+        return valid_;
+    }
+
+    constexpr bool is_roller() const NOEXCEPT
+    {
+        return roller_;
+    }
+
+    constexpr bool is_prefail() const NOEXCEPT
+    {
+        return prefail_;
+    }
+
+    constexpr bool is_prevalid() const NOEXCEPT
+    {
+        return prevalid_;
+    }
+
+    constexpr bool is_underflow() const NOEXCEPT
+    {
+        return underflow_;
+    }
+
+    constexpr bool is_oversized() const NOEXCEPT
+    {
+        return script_.size() > max_script_size;
     }
 
     constexpr const data_slice& data() const NOEXCEPT
@@ -250,8 +307,18 @@ public:
         return { script_.end(), script_.end() };
     }
 
+    constexpr const script_view& ops() const NOEXCEPT
+    {
+        return *this;
+    }
+
 private:
     data_slice script_{};
+    bool valid_{ false };
+    bool roller_{ false };
+    bool prefail_{ false };
+    bool prevalid_{ false };
+    bool underflow_{ false };
 };
 
 } // namespace chain

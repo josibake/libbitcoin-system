@@ -58,7 +58,15 @@ static void check_matches_script(const data_chunk& encoded)
     BOOST_CHECK_EQUAL(view.data(), data_slice{ encoded });
     BOOST_CHECK_EQUAL(view.size(), encoded.size());
     BOOST_CHECK_EQUAL(view.empty(), encoded.empty());
+    BOOST_CHECK_EQUAL(view.is_valid(), expected.is_valid());
+    BOOST_CHECK_EQUAL(view.is_roller(), expected.is_roller());
+    BOOST_CHECK_EQUAL(view.is_prefail(), expected.is_prefail());
+    BOOST_CHECK_EQUAL(view.is_prevalid(), expected.is_prevalid());
+    BOOST_CHECK_EQUAL(view.is_underflow(), expected.is_underflow());
+    BOOST_CHECK_EQUAL(view.is_oversized(), expected.is_oversized());
+    BOOST_CHECK_EQUAL(&view.ops(), &view);
 
+    size_t position{};
     for (const auto& operation: expected.ops())
     {
         BOOST_REQUIRE(actual != view.end());
@@ -69,6 +77,10 @@ static void check_matches_script(const data_chunk& encoded)
         BOOST_CHECK_EQUAL(actual->raw(), data_slice{ raw });
         BOOST_CHECK_EQUAL(actual->offset(), offset);
         BOOST_CHECK_EQUAL(actual->next_offset(), offset + raw.size());
+        BOOST_CHECK_EQUAL(actual->position(), position++);
+        BOOST_CHECK_EQUAL(actual->is_underclaimed(),
+            operation.is_underclaimed());
+        BOOST_CHECK_EQUAL(actual->is_oversized(), operation.is_oversized());
         BOOST_CHECK_EQUAL(actual->is_underflow(), operation.is_underflow());
 
         if (!actual->raw().empty())
@@ -85,6 +97,11 @@ static void check_matches_script(const data_chunk& encoded)
 BOOST_AUTO_TEST_CASE(script_view__empty__empty_range)
 {
     check_matches_script({});
+}
+
+BOOST_AUTO_TEST_CASE(script_view__default__invalid)
+{
+    BOOST_CHECK(!script_view{}.is_valid());
 }
 
 BOOST_AUTO_TEST_CASE(script_view__all_opcodes_and_push_sizes__matches_script)
