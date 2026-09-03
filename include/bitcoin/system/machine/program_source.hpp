@@ -42,6 +42,7 @@ public:
     using script_handle = script::cptr;
     using operation = chain::operation;
     using op_iterator = chain::operations::const_iterator;
+    using witness = chunk_cptrs_ptr;
 
     program_source(const transaction& tx, const input_iterator& input)
         NOEXCEPT
@@ -114,6 +115,19 @@ public:
     size_t witness_size() const NOEXCEPT
     {
         return input().witness().serialized_size(true);
+    }
+
+    bool is_witness_push_size() const NOEXCEPT
+    {
+        BC_ASSERT(witness_);
+        return chain::witness::is_push_size(*witness_);
+    }
+
+    template <typename Stack>
+    Stack initial_stack() const NOEXCEPT
+    {
+        BC_ASSERT(witness_);
+        return projection<Stack>(*witness_);
     }
 
     void set_subscript(size_t position) NOEXCEPT

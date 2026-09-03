@@ -47,6 +47,7 @@ public:
     using transaction = typename source::transaction;
     using script_version = chain::script_version;
     using input_iterator = typename source::input_iterator;
+    using witness = typename source::witness;
 
     /// Input script (default/empty stack).
     program(const transaction& transaction, const input_iterator& input,
@@ -61,13 +62,13 @@ public:
     /// Witness v0 (segwit) script.
     program(const transaction& transaction, const input_iterator& input,
         const script_handle& script, uint32_t active_flags,
-        script_version version, const chunk_cptrs_ptr& stack,
+        script_version version, const witness& stack,
         const chain::signatures& capture) NOEXCEPT;
 
     /// Witness v1 (tapscript) script.
     program(const transaction& transaction, const input_iterator& input,
         const script_handle& script, uint32_t active_flags,
-        script_version version, const chunk_cptrs_ptr& stack,
+        script_version version, const witness& stack,
         const hash_cptr& tapleaf, const chain::signatures& capture) NOEXCEPT;
 
     /// Program result.

@@ -75,13 +75,13 @@ CLASS::program(program&& other, const script_handle& script) NOEXCEPT
 TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
     const script_handle& script, uint32_t active_flags,
-    script_version version, const chunk_cptrs_ptr& witness,
+    script_version version, const witness& witness,
     const chain::signatures& capture) NOEXCEPT
   : source_(tx, input, script, version, witness),
     flags_(bit_and(active_flags, bip342_mask)),
-    witness_push_size_(chain::witness::is_push_size(*witness)),
+    witness_push_size_(source_.is_witness_push_size()),
     capture_(capture),
-    primary_(projection<Stack>(*witness))
+    primary_(source_.template initial_stack<Stack>())
 {
 }
 
@@ -93,13 +93,13 @@ CLASS::program(const transaction& tx, const input_iterator& input,
 TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
     const script_handle& script, uint32_t active_flags,
-    script_version version, const chunk_cptrs_ptr& witness,
+    script_version version, const witness& witness,
     const hash_cptr& tapleaf, const chain::signatures& capture) NOEXCEPT
   : source_(tx, input, script, version, witness, tapleaf),
     flags_(active_flags),
-    witness_push_size_(chain::witness::is_push_size(*witness)),
+    witness_push_size_(source_.is_witness_push_size()),
     capture_(capture),
-    primary_(projection<Stack>(*witness)),
+    primary_(source_.template initial_stack<Stack>()),
     budget_(ceilinged_add(
         add1(chain::signature_cost),
         source_.witness_size()))
