@@ -191,9 +191,8 @@ public:
             return;
 
         elements_begin_ = cursor;
-        data_slice unused{};
         for (size_t element{}; element < elements_; ++element)
-            if (!witness_view_detail::read_element(unused, cursor,
+            if (!witness_view_detail::read_element(element_, cursor,
                 witness_.end()))
                 return;
 
@@ -225,6 +224,12 @@ public:
         return is_zero(elements());
     }
 
+    constexpr data_slice annex() const NOEXCEPT
+    {
+        return elements() > one && !element_.empty() &&
+            element_.front() == taproot_annex_prefix ? element_ : data_slice{};
+    }
+
     const_iterator begin() const NOEXCEPT
     {
         return valid_ ? const_iterator{ elements_begin_, witness_.end(),
@@ -240,6 +245,7 @@ private:
     data_slice witness_{};
     const uint8_t* elements_begin_{};
     size_t elements_{};
+    data_slice element_{};
     bool valid_{ false };
 };
 

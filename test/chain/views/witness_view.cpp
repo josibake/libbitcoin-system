@@ -52,6 +52,30 @@ static void check_matches_witness(const data_stack& stack)
     BOOST_CHECK(actual == view.end());
 }
 
+BOOST_AUTO_TEST_CASE(witness_view__annex__returns_borrowed_final_element)
+{
+    const data_chunk annex{ taproot_annex_prefix, 0x42 };
+    const witness expected{ data_stack{ { 0x01 }, annex } };
+    const auto encoded = expected.to_data(true);
+    const witness_view view{ data_slice{ encoded } };
+
+    BOOST_REQUIRE(view.is_valid());
+    BOOST_CHECK_EQUAL(view.annex(), data_slice{ annex });
+    BOOST_CHECK(view.annex().data() >= encoded.data());
+    BOOST_CHECK(view.annex().data() < encoded.data() + encoded.size());
+}
+
+BOOST_AUTO_TEST_CASE(witness_view__annex__requires_two_elements_and_prefix)
+{
+    const witness single{ data_stack{ { taproot_annex_prefix } } };
+    const auto single_encoded = single.to_data(true);
+    BOOST_CHECK(witness_view{ data_slice{ single_encoded } }.annex().empty());
+
+    const witness unprefixed{ data_stack{ { 0x01 }, { 0x42 } } };
+    const auto unprefixed_encoded = unprefixed.to_data(true);
+    BOOST_CHECK(witness_view{ data_slice{ unprefixed_encoded } }.annex().empty());
+}
+
 BOOST_AUTO_TEST_CASE(witness_view__valid_encodings__match_witness)
 {
     check_matches_witness({});
