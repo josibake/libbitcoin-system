@@ -172,4 +172,51 @@ BOOST_AUTO_TEST_CASE(script_view__mixed_valid_then_underflow__matches_script)
     check_matches_script(encoded);
 }
 
+static data_chunk serialize(const script_subview& view)
+{
+    data_chunk out(view.serialized_size(true));
+    stream::out::fast stream{ out };
+    write::bytes::fast sink{ stream };
+    view.to_data(sink, true);
+    sink.flush();
+    return out;
+}
+
+BOOST_AUTO_TEST_CASE(script_subview__version0__offset_preserves_raw_operations)
+{
+    const auto encoded = base16_chunk("51ab0201024c02010252ab03030405");
+    const script_view script{ encoded };
+    const script_subview instance{ script, one };
+    const auto expected = base16_chunk("0eab0201024c02010252ab03030405");
+
+    BOOST_CHECK_EQUAL(serialize(instance), expected);
+}
+
+BOOST_AUTO_TEST_CASE(script_subview__unversioned__strips_separator_and_nominal_push)
+{
+    const auto encoded = base16_chunk("51ab0201024c02010252ab03030405");
+    const auto endorsement = base16_chunk("0102");
+    const script_view script{ encoded };
+    const script_subview instance{ script, one, data_slice{ endorsement } };
+    const auto expected = base16_chunk("094c0201025203030405");
+
+    BOOST_CHECK_EQUAL(serialize(instance), expected);
+}
+
+BOOST_AUTO_TEST_CASE(script_subview__unversioned__strips_multiple_endorsements)
+{
+    const auto encoded = base16_chunk("020102520303040553");
+    const auto first = base16_chunk("0102");
+    const auto second = base16_chunk("030405");
+    const std::array endorsements
+    {
+        data_slice{ first },
+        data_slice{ second }
+    };
+    const script_view script{ encoded };
+    const script_subview instance{ script, zero, endorsements };
+
+    BOOST_CHECK_EQUAL(serialize(instance), base16_chunk("025253"));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

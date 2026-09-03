@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <span>
 #include <bitcoin/system/chain/enums/magic_numbers.hpp>
 #include <bitcoin/system/chain/enums/opcode.hpp>
 #include <bitcoin/system/chain/operation.hpp>
@@ -317,6 +318,12 @@ public:
         return { script_.begin(), script_.end() };
     }
 
+    const_iterator begin(size_t offset) const NOEXCEPT
+    {
+        BC_ASSERT(offset <= script_.size());
+        return { std::next(script_.begin(), offset), script_.end() };
+    }
+
     const_iterator end() const NOEXCEPT
     {
         return { script_.end(), script_.end() };
@@ -334,6 +341,107 @@ private:
     bool prefail_{ false };
     bool prevalid_{ false };
     bool underflow_{ false };
+};
+
+/// A serialized subscript over archive bytes. The script, endorsements, and
+/// their backing buffers must outlive this view. Unversioned signature hashing
+/// strips code separators and nominal endorsement pushes; the two-argument
+/// form preserves the serialized script unchanged for version 0.
+class BC_API script_subview final
+{
+public:
+    DEFAULT_COPY_MOVE_DESTRUCT(script_subview);
+
+    constexpr script_subview() NOEXCEPT = default;
+
+    constexpr script_subview(const script_view& script, size_t offset) NOEXCEPT
+      : script_(script), offset_(offset)
+    {
+    }
+
+    constexpr script_subview(const script_view& script, size_t offset,
+        const data_slice& endorsement) NOEXCEPT
+      : script_(script), offset_(offset), strip_(true),
+        endorsement_(endorsement), single_(true)
+    {
+    }
+
+    constexpr script_subview(const script_view& script, size_t offset,
+        std::span<const data_slice> endorsements) NOEXCEPT
+      : script_(script), offset_(offset), strip_(true),
+        endorsements_(endorsements)
+    {
+    }
+
+    size_t serialized_size(bool prefix) const NOEXCEPT
+    {
+        const auto size = body_size();
+        return ceilinged_add(size, prefix ? variable_size(size) : zero);
+    }
+
+    void to_data(writer& sink, bool prefix) const NOEXCEPT
+    {
+        const auto size = body_size();
+
+        if (prefix)
+            sink.write_variable(size);
+
+        if (!strip_)
+        {
+            sink.write_bytes(body());
+            return;
+        }
+
+        for (auto op = script_.begin(offset_); op != script_.end(); ++op)
+            if (!is_stripped(*op))
+                sink.write_bytes(op->raw());
+    }
+
+private:
+    data_slice body() const NOEXCEPT
+    {
+        BC_ASSERT(offset_ <= script_.size());
+        return { std::next(script_.data().begin(), offset_),
+            script_.data().end() };
+    }
+
+    size_t body_size() const NOEXCEPT
+    {
+        if (!strip_)
+            return body().size();
+
+        size_t size{};
+        for (auto op = script_.begin(offset_); op != script_.end(); ++op)
+            if (!is_stripped(*op))
+                size = ceilinged_add(size, op->raw().size());
+
+        return size;
+    }
+
+    bool is_stripped(const operation_view& op) const NOEXCEPT
+    {
+        if (op.code() == opcode::codeseparator)
+            return true;
+
+        if (single_ &&
+            op.code() == operation::opcode_from_size(endorsement_.size()) &&
+            op.data() == endorsement_)
+            return true;
+
+        for (const auto& endorsement: endorsements_)
+            if (op.code() == operation::opcode_from_size(endorsement.size()) &&
+                op.data() == endorsement)
+                return true;
+
+        return false;
+    }
+
+    script_view script_{};
+    size_t offset_{};
+    bool strip_{ false };
+    data_slice endorsement_{};
+    bool single_{ false };
+    std::span<const data_slice> endorsements_{};
 };
 
 } // namespace chain
