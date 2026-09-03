@@ -91,6 +91,7 @@ protected:
 
     /// Constants.
     /// -----------------------------------------------------------------------
+    virtual INLINE const source& source_ref() const NOEXCEPT;
     virtual INLINE script_error_t initialize() const NOEXCEPT;
     virtual INLINE op_iterator begin() const NOEXCEPT;
     virtual INLINE op_iterator end() const NOEXCEPT;

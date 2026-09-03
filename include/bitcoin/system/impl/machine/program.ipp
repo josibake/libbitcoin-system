@@ -52,6 +52,13 @@ pop() NOEXCEPT
 // ============================================================================
 
 TEMPLATE
+INLINE const typename CLASS::source& CLASS::
+source_ref() const NOEXCEPT
+{
+    return source_;
+}
+
+TEMPLATE
 INLINE error::script_error_t CLASS::
 initialize() const NOEXCEPT
 {

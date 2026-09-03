@@ -44,6 +44,12 @@ public:
     using op_iterator = chain::operations::const_iterator;
     using witness = chunk_cptrs_ptr;
 
+    static input_iterator to_input(const transaction& tx,
+        size_t index) NOEXCEPT
+    {
+        return std::next(tx.inputs_ptr()->begin(), index);
+    }
+
     program_source(const transaction& tx, const input_iterator& input)
         NOEXCEPT
       : tx_(tx), input_(input), script_((*input)->script_ptr()),
@@ -85,6 +91,72 @@ public:
     const script& script_ref() const NOEXCEPT
     {
         return *script_;
+    }
+
+    bool has_prevout() const NOEXCEPT
+    {
+        return input().prevout != nullptr;
+    }
+
+    script_handle prevout_script() const NOEXCEPT
+    {
+        BC_ASSERT(has_prevout());
+        return input().prevout->script_ptr();
+    }
+
+    bool script_empty() const NOEXCEPT
+    {
+        return script_->ops().empty();
+    }
+
+    bool witness_empty() const NOEXCEPT
+    {
+        return input().witness().stack().empty();
+    }
+
+    bool is_pay_to_script_hash(uint32_t active_flags) const NOEXCEPT
+    {
+        return script_->is_pay_to_script_hash(active_flags);
+    }
+
+    bool is_pay_to_witness(uint32_t active_flags) const NOEXCEPT
+    {
+        return script_->is_pay_to_witness(active_flags);
+    }
+
+    bool is_relaxed_push_pattern() const NOEXCEPT
+    {
+        return script::is_relaxed_push_pattern(script_->ops());
+    }
+
+    bool is_nominal_push_pattern() const NOEXCEPT
+    {
+        return script::is_nominal_push_pattern(script_->ops());
+    }
+
+    chain::script_version version(const script_handle& program) const NOEXCEPT
+    {
+        return program->version();
+    }
+
+    script_handle to_script(const data_slice& data) const NOEXCEPT
+    {
+        return to_shared<script>(data, false);
+    }
+
+    code extract_segwit(script_handle& out_script, witness& out_stack,
+        const script_handle& program) const NOEXCEPT
+    {
+        return input().witness().extract_segwit(out_script, out_stack,
+            *program);
+    }
+
+    code extract_taproot(hash_cptr& out_leaf, script_handle& out_script,
+        witness& out_stack, const script_handle& program,
+        const signatures& capture) const NOEXCEPT
+    {
+        return input().witness().extract_taproot(out_leaf, out_script,
+            out_stack, *program, capture);
     }
 
     bool is_input_script() const NOEXCEPT

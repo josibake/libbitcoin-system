@@ -33,32 +33,31 @@ namespace machine {
 
 TEMPLATE
 code CLASS::
-connect(const chain::context& state, const chain::transaction& tx,
+connect(const chain::context& state, const transaction& tx,
     uint32_t index) NOEXCEPT
 {
     if (index >= tx.inputs())
         return error::inputs_overflow;
 
-    return connect(state, tx, std::next(tx.inputs_ptr()->begin(), index), {});
+    return connect(state, tx, source::to_input(tx, index), {});
 }
 
 TEMPLATE
 code CLASS::
-connect(const chain::context& state, const chain::transaction& tx,
+connect(const chain::context& state, const transaction& tx,
     const input_iterator& it, const chain::signatures& capture) NOEXCEPT
 {
-    using namespace chain;
-    const auto& input = **it;
-    if (!input.prevout)
-        return error::missing_previous_output;
-
     // Evaluate input script.
     interpreter in_program(tx, it, state.flags, capture);
+    const auto& in_source = in_program.source_ref();
+    if (!in_source.has_prevout())
+        return error::missing_previous_output;
+
     if (const auto ec = in_program.run())
         return ec;
 
     // Evaluate output script using stack copied from input script evaluation.
-    const auto& prevout = input.prevout->script_ptr();
+    const auto prevout = in_source.prevout_script();
     interpreter out_program(in_program, prevout);
 
     if (auto ec = out_program.run())
@@ -69,23 +68,24 @@ connect(const chain::context& state, const chain::transaction& tx,
     {
         return error::stack_false;
     }
-    else if (prevout->is_pay_to_script_hash(state.flags))
+    else if (out_program.source_ref().is_pay_to_script_hash(state.flags))
     {
         // Because output script pushed script hash program [bip16].
         if ((ec = connect_embedded(state, tx, it, in_program, capture)))
             return ec;
     }
-    else if (prevout->is_pay_to_witness(state.flags))
+    else if (out_program.source_ref().is_pay_to_witness(state.flags))
     {
         // The input script must be empty [bip141].
-        if (!input.script().ops().empty())
+        if (!in_source.script_empty())
             return error::dirty_witness;
 
         // Because output script pushed version and witness program [bip141].
-        if ((ec = connect_witness(state, tx, it, *prevout, false, capture)))
+        if ((ec = connect_witness(state, tx, it, in_source, prevout, false,
+            capture)))
             return ec;
     }
-    else if (!input.witness().stack().empty())
+    else if (!in_source.witness_empty())
     {
         // A non-witness program must have empty witness field [bip141].
         return error::unexpected_witness;
@@ -97,20 +97,21 @@ connect(const chain::context& state, const chain::transaction& tx,
 // static/protected
 TEMPLATE
 code CLASS::connect_embedded(const chain::context& state,
-    const chain::transaction& tx, const input_iterator& it,
+    const transaction& tx, const input_iterator& it,
     interpreter& in_program, const chain::signatures& capture) NOEXCEPT
 {
-    using namespace chain;
-    const auto& input = **it;
-    const auto& ops = input.script().ops();
+    const auto& in_source = in_program.source_ref();
 
     // Input script is limited to relaxed push data operations [bip16].
-    if (!script::is_relaxed_push_pattern(ops))
+    if (!in_source.is_relaxed_push_pattern())
         return error::invalid_script_embed;
+
+    const auto nominal = in_source.is_nominal_push_pattern();
+    const auto witness_empty = in_source.witness_empty();
 
     // Embedded script must be at the top of the stack [bip16].
     // Evaluate embedded script using stack moved from input script.
-    const auto embedded = to_shared<script>(in_program.pop(), false);
+    const auto embedded = in_source.to_script(in_program.pop_slice_());
     interpreter out_program(std::move(in_program), embedded);
 
     if (auto ec = out_program.run())
@@ -121,17 +122,18 @@ code CLASS::connect_embedded(const chain::context& state,
     {
         return error::stack_false;
     }
-    else if (embedded->is_pay_to_witness(state.flags))
+    else if (out_program.source_ref().is_pay_to_witness(state.flags))
     {
         // The input script must be a nominal push of the embedded [bip141].
-        if (!script::is_nominal_push_pattern(ops))
+        if (!nominal)
             return error::dirty_embed;
 
         // Because output script pushed version/witness program [bip141].
-        if ((ec = connect_witness(state, tx, it, *embedded, true, capture)))
+        if ((ec = connect_witness(state, tx, it, in_source, embedded, true,
+            capture)))
             return ec;
     }
-    else if (!input.witness().stack().empty())
+    else if (!witness_empty)
     {
         // A non-witness program must have empty witness field [bip141].
         return error::unexpected_witness;
@@ -143,23 +145,22 @@ code CLASS::connect_embedded(const chain::context& state,
 // static/protected
 TEMPLATE
 code CLASS::connect_witness(const chain::context& state,
-    const chain::transaction& tx, const input_iterator& it,
-    const chain::script& prevout, bool embedded,
+    const transaction& tx, const input_iterator& it, const source& in_source,
+    const script_handle& prevout, bool embedded,
     const chain::signatures& capture) NOEXCEPT
 {
     using namespace chain;
-    const auto& input = **it;
     const auto flags = state.flags;
-    const auto version = prevout.version();
+    const auto version = in_source.version(prevout);
     code ec;
 
     switch (version)
     {
         case script_version::segwit:
         {
-            script::cptr script;
-            chunk_cptrs_ptr stack;
-            if ((ec = input.witness().extract_segwit(script, stack, prevout)))
+            script_handle script;
+            witness stack;
+            if ((ec = in_source.extract_segwit(script, stack, prevout)))
                 return ec;
 
             interpreter program(tx, it, script, flags, version, stack, capture);
@@ -189,9 +190,9 @@ code CLASS::connect_witness(const chain::context& state,
                 return error::script_success;
 
             hash_cptr tapleaf{};
-            script::cptr script;
-            chunk_cptrs_ptr stack;
-            if ((ec = input.witness().extract_taproot(tapleaf, script, stack,
+            script_handle script;
+            witness stack;
+            if ((ec = in_source.extract_taproot(tapleaf, script, stack,
                 prevout, capture)))
                 return ec;
 
