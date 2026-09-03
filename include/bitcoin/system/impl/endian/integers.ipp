@@ -141,7 +141,7 @@ constexpr Integer from_big_array(size_t length,
 
 template <typename Integer, if_integer<Integer>>
 constexpr Integer from_big_chunk(size_t length,
-    const data_chunk& data) NOEXCEPT
+    const data_slice& data) NOEXCEPT
 {
     if constexpr (is_one(sizeof(Integer)))
     {
@@ -212,7 +212,7 @@ constexpr Integer from_little_array(size_t length,
 
 template <typename Integer, if_integer<Integer>>
 constexpr Integer from_little_chunk(size_t length,
-    const data_chunk& data) NOEXCEPT
+    const data_slice& data) NOEXCEPT
 {
     if constexpr (is_one(sizeof(Integer)))
     {

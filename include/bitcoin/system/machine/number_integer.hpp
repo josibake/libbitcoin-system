@@ -35,11 +35,12 @@ public:
     typedef signed_type<Size> Integer;
 
     static constexpr bool from_integer(Integer& out, int64_t vary) NOEXCEPT;
-    static constexpr bool from_chunk(Integer& out, const data_chunk& vary) NOEXCEPT;
+    static constexpr bool from_chunk(Integer& out,
+        const data_slice& vary) NOEXCEPT;
 
 protected:
-    static constexpr bool strict_zero(const data_chunk& vary) NOEXCEPT;
-    static constexpr bool is_overflow(const data_chunk& vary) NOEXCEPT;
+    static constexpr bool strict_zero(const data_slice& vary) NOEXCEPT;
+    static constexpr bool is_overflow(const data_slice& vary) NOEXCEPT;
     static constexpr bool is_overflow(int64_t value) NOEXCEPT;
 };
 

@@ -32,17 +32,18 @@ class BC_API boolean
 {
 public:
     static constexpr bool from_integer(int64_t vary) NOEXCEPT;
-    static constexpr bool from_chunk(const data_chunk& vary) NOEXCEPT;
+    static constexpr bool from_chunk(const data_slice& vary) NOEXCEPT;
 
     /// minimal [bip342], integer must be 0 or 1, chunk must be [] or [0x01].
     static constexpr bool from_integer(bool& value, int64_t vary) NOEXCEPT;
-    static constexpr bool from_chunk(bool& value, const data_chunk& vary) NOEXCEPT;
+    static constexpr bool from_chunk(bool& value,
+        const data_slice& vary) NOEXCEPT;
 
     /// strict [bip147], false must be [].
-    static constexpr bool from_chunk_strict(const data_chunk& vary) NOEXCEPT;
+    static constexpr bool from_chunk_strict(const data_slice& vary) NOEXCEPT;
 
 protected:
-    static constexpr bool strict_false(const data_chunk& vary) NOEXCEPT;
+    static constexpr bool strict_false(const data_slice& vary) NOEXCEPT;
     static constexpr bool is_sign_byte(uint8_t byte) NOEXCEPT;
 };
 

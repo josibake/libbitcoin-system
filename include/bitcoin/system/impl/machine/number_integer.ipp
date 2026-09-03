@@ -52,7 +52,7 @@ from_integer(Integer& out, int64_t vary) NOEXCEPT
 
 TEMPLATE
 constexpr bool CLASS::
-from_chunk(Integer& out, const data_chunk& vary) NOEXCEPT
+from_chunk(Integer& out, const data_slice& vary) NOEXCEPT
 {
     out = 0;
 
@@ -63,8 +63,8 @@ from_chunk(Integer& out, const data_chunk& vary) NOEXCEPT
     if (is_overflow(vary))
         return false;
 
-    // Size constraint guards from_little_endian.
-    out = from_little_endian<Integer>(vary);
+    // Size constraint guards from_little_chunk.
+    out = from_little_chunk<Integer>(sizeof(Integer), vary);
 
     // Restore sign from indication.
     if (is_negated(vary.back()))
@@ -76,7 +76,7 @@ from_chunk(Integer& out, const data_chunk& vary) NOEXCEPT
 // protected
 TEMPLATE
 constexpr bool CLASS::
-strict_zero(const data_chunk& vary) NOEXCEPT
+strict_zero(const data_slice& vary) NOEXCEPT
 {
     return vary.empty();
 }
@@ -84,7 +84,7 @@ strict_zero(const data_chunk& vary) NOEXCEPT
 // protected
 TEMPLATE
 constexpr bool CLASS::
-is_overflow(const data_chunk& vary) NOEXCEPT
+is_overflow(const data_slice& vary) NOEXCEPT
 {
     return vary.size() > Size;
 }

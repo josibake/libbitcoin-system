@@ -36,7 +36,7 @@ from_integer(int64_t vary) NOEXCEPT
 }
 
 constexpr bool boolean::
-from_chunk(const data_chunk& vary) NOEXCEPT
+from_chunk(const data_slice& vary) NOEXCEPT
 {
     // An optimization, also guards vector empty.
     if (strict_false(vary))
@@ -68,7 +68,7 @@ from_integer(bool& value, int64_t vary) NOEXCEPT
 }
 
 constexpr bool boolean::
-from_chunk(bool& value, const data_chunk& vary) NOEXCEPT
+from_chunk(bool& value, const data_slice& vary) NOEXCEPT
 {
     if (strict_false(vary))
     {
@@ -84,7 +84,7 @@ from_chunk(bool& value, const data_chunk& vary) NOEXCEPT
 }
 
 constexpr bool boolean::
-from_chunk_strict(const data_chunk& vary) NOEXCEPT
+from_chunk_strict(const data_slice& vary) NOEXCEPT
 {
     // True if not strictly false.
     return !strict_false(vary);
@@ -92,7 +92,7 @@ from_chunk_strict(const data_chunk& vary) NOEXCEPT
 
 // protected
 constexpr bool boolean::
-strict_false(const data_chunk& vary) NOEXCEPT
+strict_false(const data_slice& vary) NOEXCEPT
 {
     return vary.empty();
 }
