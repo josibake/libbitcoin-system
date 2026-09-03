@@ -270,6 +270,14 @@ BOOST_AUTO_TEST_CASE(signatures__ecdsa_signatures__purge__empty)
 
 // signatures (thread statics)
 
+BOOST_AUTO_TEST_CASE(signatures__signatures__default_handlers__expected)
+{
+    const signatures capture{};
+    BOOST_REQUIRE(!capture.enabled);
+    BOOST_REQUIRE(!capture.log);
+    BOOST_REQUIRE(capture.fire);
+}
+
 BOOST_AUTO_TEST_CASE(signatures__signatures__thread_statics__stable_and_purgeable)
 {
     auto& ecdsa = signatures::ecdsa_rows();
