@@ -118,94 +118,14 @@ decode_signature(ec_signature& out, const data_slice& der_signature,
 // Signature subscripting.
 // ----------------------------------------------------------------------------
 
-// Subscripts are referenced by script.offset mutable metadata. This allows for
-// efficient subscripting with no copying. As a result concurrent execution of
-// any one input script instance is not thread safe.
 TEMPLATE
 INLINE void CLASS::
 set_subscript(size_t position) NOEXCEPT
 {
-    BC_ASSERT(position < script_->ops().size());
-
-    // Advance the offset to the op following the found code separator.
-    // This is non-const because changes script state (despite being mutable).
-    script_->offset = std::next(script_->ops().begin(), add1(position));
+    source_.set_subscript(position);
 
     // The subscript is changed, so any cached signature hash is stale.
     uncache();
-}
-
-// static/private
-TEMPLATE
-inline chain::strippers CLASS::
-create_strip_ops(const chunk_xptrs& endorsements) NOEXCEPT
-{
-    chain::strippers strip{};
-    strip.reserve(add1(endorsements.size()));
-    for (const auto& endorsement: endorsements)
-        strip.emplace_back(endorsement);
-
-    strip.emplace_back(chain::opcode::codeseparator);
-    return strip;
-}
-
-// static/private
-TEMPLATE
-inline chain::strippers CLASS::
-create_strip_ops(const chunk_xptr& endorsement) NOEXCEPT
-{
-    using namespace chain;
-    return { stripper{ endorsement }, stripper{ opcode::codeseparator } };
-}
-
-// ****************************************************************************
-// CONSENSUS: Endorsement and code separator stripping are always performed in
-// conjunction and are limited to non-witness signature hash subscripts.
-// The order of operations is inconsequential, as they are all removed.
-// Subscripts are not evaluated, they are limited to signature hash creation.
-// ****************************************************************************
-TEMPLATE
-inline chain::script::cptr CLASS::
-subscript(const chunk_xptrs& endorsements) const NOEXCEPT
-{
-    // bip141: establishes the version property.
-    // bip143: op stripping is not applied to bip141 v0 scripts.
-    if (is_enabled(flags::bip143_rule) && version_ == script_version::segwit)
-        return script_;
-
-    // Transform into a set of endorsement push ops and one op_codeseparator.
-    const auto strip = create_strip_ops(endorsements);
-    const auto stop = script_->ops().end();
-    const op_iterator start{ script_->offset };
-
-    // If none of the strip ops are found, return the subscript.
-    if (!is_intersecting<operations>(start, stop, strip))
-        return script_;
-
-    // Create new script from stripped copy of subscript operations.
-    return to_shared<script>(difference<operations>(start, stop, strip));
-}
-
-TEMPLATE
-inline chain::script::cptr CLASS::
-subscript(const chunk_xptr& endorsement) const NOEXCEPT
-{
-    // bip141: establishes the version property.
-    // bip143: op stripping is not applied to bip141 v0 scripts.
-    if (is_enabled(flags::bip143_rule) && version_ == script_version::segwit)
-        return script_;
-
-    // Transform into a set with one endorsement push op and op_codeseparator.
-    const auto strip = create_strip_ops(endorsement);
-    const auto stop = script_->ops().end();
-    const op_iterator start{ script_->offset };
-
-    // If none of the strip ops are found, return the subscript.
-    if (!is_intersecting<operations>(start, stop, strip))
-        return script_;
-
-    // Create new script from stripped copy of subscript operations.
-    return to_shared<script>(difference<operations>(start, stop, strip));
 }
 
 // Signature hashing.
@@ -215,16 +135,23 @@ TEMPLATE
 INLINE bool CLASS::
 signature_hash(hash_digest& out, uint8_t sighash_flags) const NOEXCEPT
 {
-    return signature_hash(out, *script_, sighash_flags);
+    return source_.signature_hash(out, sighash_flags, flags_);
 }
 
 TEMPLATE
 INLINE bool CLASS::
-signature_hash(hash_digest& out, const script& subscript,
+signature_hash(hash_digest& out, const chunk_xptr& endorsement,
     uint8_t sighash_flags) const NOEXCEPT
 {
-    return transaction_.signature_hash(out, input_, subscript, value_,
-        tapleaf_, version_, sighash_flags, flags_);
+    return source_.signature_hash(out, endorsement, sighash_flags, flags_);
+}
+
+TEMPLATE
+INLINE bool CLASS::
+signature_hash(hash_digest& out, const chunk_xptrs& endorsements,
+    uint8_t sighash_flags) const NOEXCEPT
+{
+    return source_.signature_hash(out, endorsements, sighash_flags, flags_);
 }
 
 // Multisig signature hash caching.
@@ -255,16 +182,17 @@ INLINE bool CLASS::
 set_hash(uint8_t sighash_flags) const NOEXCEPT
 {
     // This v1 (unsubscripted) sighash can fail, in which case don't set cache.
-    return ((multisig_.set = signature_hash(multisig_.hash, *script_,
+    return ((multisig_.set = signature_hash(multisig_.hash,
         multisig_.flags = sighash_flags)));
 }
 
 TEMPLATE
 INLINE void CLASS::
-set_hash(const chain::script& subscript, uint8_t sighash_flags) const NOEXCEPT
+set_hash(const chunk_xptrs& endorsements, uint8_t sighash_flags) const NOEXCEPT
 {
     // Only v1 (unsubscripted) sighash can fail, so void return here.
-    signature_hash(multisig_.hash, subscript, multisig_.flags = sighash_flags);
+    signature_hash(multisig_.hash, endorsements,
+        multisig_.flags = sighash_flags);
     multisig_.set = true;
 }
 

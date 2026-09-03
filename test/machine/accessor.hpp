@@ -129,6 +129,10 @@ public:
     using base::end;
     using base::tx;
     using base::input;
+    using base::input_final;
+    using base::input_sequence;
+    using base::transaction_version;
+    using base::transaction_locktime;
     using base::is_enabled;
     using base::equal_chunks;
 
@@ -205,7 +209,6 @@ public:
 
     // Signature subscripting.
     using base::set_subscript;
-    using base::subscript;
 
     // Signature hashing.
     using base::signature_hash;
@@ -251,7 +254,14 @@ protected:
         return hash_result;
     }
 
-    bool signature_hash(hash_digest& out, const chain::script&,
+    bool signature_hash(hash_digest& out, const chunk_xptr&,
+        uint8_t) const NOEXCEPT override
+    {
+        out = one_hash;
+        return hash_result;
+    }
+
+    bool signature_hash(hash_digest& out, const chunk_xptrs&,
         uint8_t) const NOEXCEPT override
     {
         out = one_hash;
@@ -263,7 +273,7 @@ protected:
         return hash_result;
     }
 
-    void set_hash(const chain::script&, uint8_t) const NOEXCEPT override
+    void set_hash(const chunk_xptrs&, uint8_t) const NOEXCEPT override
     {
     }
 

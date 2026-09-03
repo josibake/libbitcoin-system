@@ -1076,8 +1076,7 @@ op_check_sig_verify() NOEXCEPT
 
     // Generate signature hash.
     hash_digest hash{};
-    const auto subscript = this->subscript(endorsement);
-    if (!this->signature_hash(hash, *subscript, sighash_flags))
+    if (!this->signature_hash(hash, endorsement, sighash_flags))
         return error::op_check_sig_verify3;
 
     // Verify ECDSA signature against public key and signature hash.
@@ -1160,7 +1159,6 @@ op_check_multisig_verify() NOEXCEPT
         return error::op_success;
 
     auto it = endorsements.begin();
-    const auto subscript = this->subscript(endorsements);
     const auto bip66 = this->is_enabled(flags::bip66_rule);
 
     // This subscript is stripped of these endorsements, so a hash cached by a
@@ -1190,7 +1188,7 @@ op_check_multisig_verify() NOEXCEPT
 
         // Signature hash caching (bypass signature hash if same as previous).
         if (!this->cached(sighash_flags))
-            this->set_hash(*subscript, sighash_flags);
+            this->set_hash(endorsements, sighash_flags);
 
         // Verify ECDSA signature against public key and cache signature hash.
         if (this->verify_ecdsa_signature(*key, this->cached_hash(), sig, false))
@@ -1214,7 +1212,7 @@ op_check_locktime_verify() const NOEXCEPT
         return op_nop(opcode::nop2);
 
     // The tx sequence is 0xffffffff.
-    if (this->input().is_final())
+    if (this->input_final())
         return error::op_check_locktime_verify1;
 
     // The stack is empty.
@@ -1225,7 +1223,7 @@ op_check_locktime_verify() const NOEXCEPT
     if (!this->peek_unsigned40(stack_locktime40))
         return error::op_check_locktime_verify2;
 
-    const auto trans_locktime32 = this->tx().locktime();
+    const auto trans_locktime32 = this->transaction_locktime();
     using namespace chain;
 
     // The stack locktime type differs from that of tx.
@@ -1258,7 +1256,7 @@ op_check_sequence_verify() const NOEXCEPT
         return error::op_check_sequence_verify1;
 
     // Only 32 bits are tested.
-    const auto input_sequence32 = this->input().sequence();
+    const auto input_sequence32 = this->input_sequence();
     using namespace chain;
 
     // The stack sequence is disabled, treat as nop3.
@@ -1266,7 +1264,7 @@ op_check_sequence_verify() const NOEXCEPT
         return op_nop(opcode::nop3);
 
     // The stack sequence is enabled and tx version less than 2.
-    if (this->tx().version() < relative_locktime_min_version)
+    if (this->transaction_version() < relative_locktime_min_version)
         return error::op_check_sequence_verify2;
 
     // The transaction sequence is disabled.

@@ -61,11 +61,11 @@ initialize() const NOEXCEPT
     const auto bip342 = is_enabled(flags::bip342_rule);
 
     // Succeed if any success code, overrides all codes and errors [bip342].
-    if (bip342 && script_->is_prevalid())
+    if (bip342 && source_.script_ref().is_prevalid())
         return error::prevalid_script;
 
     // Fail if last op is underflow (same behavior as prefail, invalid code).
-    if (script_->is_underflow())
+    if (source_.script_ref().is_underflow())
         return error::invalid_script;
 
     // Stack limit (1,000) applied to initial stack [bip342].
@@ -73,11 +73,11 @@ initialize() const NOEXCEPT
         return error::invalid_stack_size;
 
     // Apply stack element limit (520) to initial witness [bip342|bip141].
-    if ((bip342 || bip141) && witness_ && !chain::witness::is_push_size(*witness_))
+    if ((bip342 || bip141) && !witness_push_size_)
         return error::invalid_witness_stack;
 
     // Script size limit (10,000) [0.3.7+], removed [bip342].
-    if (!bip342 && nops && script_->is_oversized())
+    if (!bip342 && nops && source_.script_ref().is_oversized())
         return error::invalid_script_size;
 
     // Fail if any op invalid (invalid codes reduced in tapscript).
@@ -85,7 +85,7 @@ initialize() const NOEXCEPT
     // Promoted success codes are not reachable here due to is_prevalid above.
     // So only op_verif/op_vernotif (unpromoted invalids) are caught here for
     // tapscript, otherwise is_prevalid bypassed and all invalids caught here.
-    if (script_->is_prefail())
+    if (source_.script_ref().is_prefail())
         return error::prefail_script;
 
     return error::script_success;
@@ -95,28 +95,56 @@ TEMPLATE
 INLINE typename CLASS::op_iterator CLASS::
 begin() const NOEXCEPT
 {
-    return script_->ops().begin();
+    return source_.script_ref().ops().begin();
 }
 
 TEMPLATE
 INLINE typename CLASS::op_iterator CLASS::
 end() const NOEXCEPT
 {
-    return script_->ops().end();
+    return source_.script_ref().ops().end();
 }
 
 TEMPLATE
-INLINE const chain::transaction& CLASS::
+INLINE const typename Source::transaction& CLASS::
 tx() const NOEXCEPT
 {
-    return transaction_;
+    return source_.tx();
 }
 
 TEMPLATE
-INLINE const chain::input& CLASS::
+INLINE const typename Source::input_type& CLASS::
 input() const NOEXCEPT
 {
-    return **input_;
+    return source_.input();
+}
+
+TEMPLATE
+INLINE bool CLASS::
+input_final() const NOEXCEPT
+{
+    return source_.input_final();
+}
+
+TEMPLATE
+INLINE uint32_t CLASS::
+input_sequence() const NOEXCEPT
+{
+    return source_.input_sequence();
+}
+
+TEMPLATE
+INLINE uint32_t CLASS::
+transaction_version() const NOEXCEPT
+{
+    return source_.transaction_version();
+}
+
+TEMPLATE
+INLINE uint32_t CLASS::
+transaction_locktime() const NOEXCEPT
+{
+    return source_.transaction_locktime();
 }
 
 TEMPLATE
@@ -165,7 +193,7 @@ TEMPLATE
 INLINE void CLASS::
 push_operation(const operation& op) NOEXCEPT
 {
-    push_chunk(op.data_ptr());
+    source_.push_operation(primary_, op);
 }
 
 // This is the only source of push (write) tethering.

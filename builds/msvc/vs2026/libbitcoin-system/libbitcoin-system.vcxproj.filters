@@ -1349,6 +1349,9 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\program.hpp">
       <Filter>include\bitcoin\system\machine</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\program_source.hpp">
+      <Filter>include\bitcoin\system\machine</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\stack.hpp">
       <Filter>include\bitcoin\system\machine</Filter>
     </ClInclude>

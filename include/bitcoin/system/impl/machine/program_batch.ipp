@@ -49,7 +49,7 @@ verify_ecdsa_signature(const data_slice& point, const hash_digest& hash,
             {
                 // Count as missed, consistent with not batchable telemetry.
                 capture_.fire(chain::signatures::miss::ecdsa, one);
-                capture_.log(*script_);
+                source_.log(capture_);
                 return ecdsa::verify_signature(point, hash, signature);
             }
 
@@ -67,7 +67,7 @@ verify_ecdsa_signature(const data_slice& point, const hash_digest& hash,
         {
             // Not batchable.
             capture_.fire(chain::signatures::miss::ecdsa, one);
-            capture_.log(*script_);
+            source_.log(capture_);
         }
     }
 
@@ -87,7 +87,7 @@ try_batch_multisig_verification(const chunk_xptrs& points,
     {
         // Not batchable.
         capture_.fire(signatures::miss::multisig, points.size());
-        capture_.log(*script_);
+        source_.log(capture_);
         return false;
     }
 
@@ -98,7 +98,7 @@ try_batch_multisig_verification(const chunk_xptrs& points,
     {
         // Count as missed, consistent with not batchable telemetry.
         capture_.fire(signatures::miss::multisig, points.size());
-        capture_.log(*script_);
+        source_.log(capture_);
         return false;
     }
 
@@ -146,7 +146,7 @@ verify_schnorr_signature(const data_slice& point, const hash_digest& hash,
         {
             // Not batchable.
             capture_.fire(chain::signatures::miss::schnorr, one);
-            capture_.log(*script_);
+            source_.log(capture_);
         }
     }
 
@@ -165,7 +165,7 @@ is_threshold_batchable() const NOEXCEPT
         return true;
 
     size_t min{}, max{};
-    const auto op = script_->extract_tapscript_threshold(min, max);
+    const auto op = source_.extract_tapscript_threshold(min, max);
 
     // All non-empty elements (sigs) on the stack (plus self) must be
     // evaluated in a captured sigop. Underflow/overflow imply failure.
@@ -194,7 +194,7 @@ parse_ecdsa_multisig(hash_digest& hash, keys_array& keys,
     return 
         parse_ecdsa_signatures(sighash, sigs, endorsements, bip66) &&
         compress_public_keys(keys, points) &&
-        signature_hash(hash, *subscript(endorsements), sighash);
+        signature_hash(hash, endorsements, sighash);
 }
 
 TEMPLATE
@@ -284,9 +284,8 @@ is_ecdsa_batchable() const NOEXCEPT
     if (is_input_script())
         return false;
 
-    const auto& ops = script_->ops();
-    return chain::script::is_pay_public_key_pattern(ops)
-        || chain::script::is_pay_key_hash_pattern(ops);
+    return source_.is_pay_public_key_pattern() ||
+        source_.is_pay_key_hash_pattern();
 }
 
 TEMPLATE
@@ -296,8 +295,7 @@ is_multisig_batchable() const NOEXCEPT
     if (is_input_script())
         return false;
 
-    const auto& ops = script_->ops();
-    return chain::script::is_pay_multisig_standard_pattern(ops);
+    return source_.is_pay_multisig_standard_pattern();
 }
 
 TEMPLATE
@@ -307,18 +305,17 @@ is_schnorr_batchable() const NOEXCEPT
     if (is_input_script())
         return false;
 
-    const auto& ops = script_->ops();
-    return chain::script::is_pay_taproot_key_path_pattern(ops)
-        || chain::script::is_pay_tapscript_single_pattern(ops)
-        || chain::script::is_pay_tapscript_timelock_pattern(ops)
-        || chain::script::is_pay_tapscript_inscription_pattern(ops);
+    return source_.is_pay_taproot_key_path_pattern() ||
+        source_.is_pay_tapscript_single_pattern() ||
+        source_.is_pay_tapscript_timelock_pattern() ||
+        source_.is_pay_tapscript_inscription_pattern();
 }
 
 TEMPLATE
 inline bool CLASS::
 is_input_script() const NOEXCEPT
 {
-    return spender_;
+    return source_.is_input_script();
 }
 
 } // namespace machine

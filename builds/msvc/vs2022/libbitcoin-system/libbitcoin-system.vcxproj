@@ -565,6 +565,7 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\number_chunk.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\number_integer.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\program.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\program_source.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\machine\stack.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\math\addition.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\math\bits.hpp" />

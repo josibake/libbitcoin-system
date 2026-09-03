@@ -25,6 +25,7 @@
 #include <bitcoin/system/machine/number_chunk.hpp>
 #include <bitcoin/system/machine/number_integer.hpp>
 #include <bitcoin/system/machine/program.hpp>
+#include <bitcoin/system/machine/program_source.hpp>
 #include <bitcoin/system/machine/stack.hpp>
 
 #endif

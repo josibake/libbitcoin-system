@@ -727,6 +727,7 @@ include_bitcoin_system_machine_HEADERS = \
     ${srcdir}/../../include/bitcoin/system/machine/number_chunk.hpp \
     ${srcdir}/../../include/bitcoin/system/machine/number_integer.hpp \
     ${srcdir}/../../include/bitcoin/system/machine/program.hpp \
+    ${srcdir}/../../include/bitcoin/system/machine/program_source.hpp \
     ${srcdir}/../../include/bitcoin/system/machine/stack.hpp
 
 include_bitcoin_system_mathdir = \

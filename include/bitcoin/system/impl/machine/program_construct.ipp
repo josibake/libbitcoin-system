@@ -38,50 +38,34 @@ namespace machine {
 TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
     uint32_t active_flags, const chain::signatures& capture) NOEXCEPT
-  : transaction_(tx),
-    input_(input),
-    script_((*input)->script_ptr()),
+  : source_(tx, input),
     flags_(bit_and(active_flags, bip342_mask)),
-    value_(max_uint64),
-    version_(script_version::unversioned),
     capture_(capture),
-    spender_(true),
     primary_()
 {
-    script_->clear_offset();
 }
 
 // Legacy p2sh or prevout script run (copied input stack - use first).
 // 'other' must remain in scope, this holds state referenced by weak pointers.
-// This expectation is guaranteed by the retained transaction_ member reference
-// and copied program tether (which is not tx state).
+// This expectation is guaranteed by the retained source relationship and
+// copied program tether (which is not tx state).
 TEMPLATE
-CLASS::program(const program& other, const script::cptr& script) NOEXCEPT
-  : transaction_(other.transaction_),
-    input_(other.input_),
-    script_(script),
+CLASS::program(const program& other, const script_handle& script) NOEXCEPT
+  : source_(other.source_, script),
     flags_(other.flags_),
-    value_(other.value_),
-    version_(other.version_),
     capture_(other.capture_),
     primary_(other.primary_)
 {
-    script_->clear_offset();
 }
 
 // Legacy p2sh or prevout script run (moved input stack/tether - use last).
 TEMPLATE
-CLASS::program(program&& other, const script::cptr& script) NOEXCEPT
-  : transaction_(other.transaction_),
-    input_(other.input_),
-    script_(script),
+CLASS::program(program&& other, const script_handle& script) NOEXCEPT
+  : source_(other.source_, script),
     flags_(other.flags_),
-    value_(other.value_),
-    version_(other.version_),
     capture_(other.capture_),
     primary_(std::move(other.primary_))
 {
-    script_->clear_offset();
 }
 
 // Segwit script run (witness-initialized stack).
@@ -90,20 +74,15 @@ CLASS::program(program&& other, const script::cptr& script) NOEXCEPT
 // to guarantee the lifetime of its elements.
 TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
-    const script::cptr& script, uint32_t active_flags,
+    const script_handle& script, uint32_t active_flags,
     script_version version, const chunk_cptrs_ptr& witness,
     const chain::signatures& capture) NOEXCEPT
-  : transaction_(tx),
-    input_(input),
-    script_(script),
+  : source_(tx, input, script, version, witness),
     flags_(bit_and(active_flags, bip342_mask)),
-    value_((*input)->prevout->value()),
-    version_(version),
+    witness_push_size_(chain::witness::is_push_size(*witness)),
     capture_(capture),
-    witness_(witness),
     primary_(projection<Stack>(*witness))
 {
-    script_->clear_offset();
 }
 
 // Taproot script run (witness-initialized stack).
@@ -113,24 +92,18 @@ CLASS::program(const transaction& tx, const input_iterator& input,
 // This program is never used to construct another, so masked flags_ never mix.
 TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
-    const script::cptr& script, uint32_t active_flags,
+    const script_handle& script, uint32_t active_flags,
     script_version version, const chunk_cptrs_ptr& witness,
     const hash_cptr& tapleaf, const chain::signatures& capture) NOEXCEPT
-  : transaction_(tx),
-    input_(input),
-    script_(script),
+  : source_(tx, input, script, version, witness, tapleaf),
     flags_(active_flags),
-    value_((*input)->prevout->value()),
-    version_(version),
+    witness_push_size_(chain::witness::is_push_size(*witness)),
     capture_(capture),
-    witness_(witness),
-    tapleaf_(tapleaf),
     primary_(projection<Stack>(*witness)),
     budget_(ceilinged_add(
         add1(chain::signature_cost),
-        (*input)->witness().serialized_size(true)))
+        source_.witness_size()))
 {
-    script_->clear_offset();
 }
 
 } // namespace machine
