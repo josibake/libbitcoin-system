@@ -347,6 +347,7 @@ include_bitcoin_system_chain_viewsdir = \
 
 include_bitcoin_system_chain_views_HEADERS = \
     ${srcdir}/../../include/bitcoin/system/chain/views/block_view.hpp \
+    ${srcdir}/../../include/bitcoin/system/chain/views/script_view.hpp \
     ${srcdir}/../../include/bitcoin/system/chain/views/transaction_view.hpp
 
 include_bitcoin_system_configdir = \
@@ -1010,6 +1011,7 @@ test_libbitcoin_system_test_SOURCES = \
     ${srcdir}/../../test/chain/json/transaction.cpp \
     ${srcdir}/../../test/chain/json/witness.cpp \
     ${srcdir}/../../test/chain/views/block_view.cpp \
+    ${srcdir}/../../test/chain/views/script_view.cpp \
     ${srcdir}/../../test/chain/views/transaction_view.cpp \
     ${srcdir}/../../test/config/authority.cpp \
     ${srcdir}/../../test/config/base16.cpp \
