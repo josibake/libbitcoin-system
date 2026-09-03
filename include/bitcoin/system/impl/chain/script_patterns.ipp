@@ -60,7 +60,13 @@ constexpr bool script::is_push_only_pattern(const operations& ops) NOEXCEPT
 // ****************************************************************************
 constexpr bool script::is_relaxed_push_pattern(const operations& ops) NOEXCEPT
 {
-    const auto push = [&](const operation& op) NOEXCEPT
+    return is_relaxed_push_pattern<operations>(ops);
+}
+
+template <typename Range>
+constexpr bool script::is_relaxed_push_pattern(const Range& ops) NOEXCEPT
+{
+    const auto push = [](const auto& op) NOEXCEPT
     {
         return operation::is_relaxed_push(op.code());
     };
@@ -71,8 +77,14 @@ constexpr bool script::is_relaxed_push_pattern(const operations& ops) NOEXCEPT
 // A single push has exactly one nominal encoding [bip141].
 constexpr bool script::is_nominal_push_pattern(const operations& ops) NOEXCEPT
 {
-    return is_one(ops.size())
-        && ops[0].is_nominal_push();
+    return is_nominal_push_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_nominal_push_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    return is_one(count) && ops.begin()->is_nominal_push();
 }
 
 // ****************************************************************************
@@ -97,11 +109,22 @@ constexpr bool script::is_commitment_pattern(const operations& ops) NOEXCEPT
 constexpr bool script::is_pay_witness_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() == 2u
-        && ops[0].is_nonnegative()
-        && ops[1].is_minimal_push()
-        && ops[1].data().size() >= min_witness_program
-        && ops[1].data().size() <= max_witness_program;
+    return is_pay_witness_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_witness_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count != two)
+        return false;
+
+    auto op = ops.begin();
+    if (!(op++)->is_nonnegative() || !op->is_minimal_push())
+        return false;
+
+    const auto size = op->data().size();
+    return size >= min_witness_program && size <= max_witness_program;
 }
 
 // A witness program used only for policy (not implemented).
@@ -185,10 +208,20 @@ constexpr bool script::is_pay_key_hash_pattern(const Range& ops,
 constexpr bool script::is_pay_script_hash_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() == 3u
-        && ops[0].code() == opcode::hash160
-        && ops[1].code() == opcode::push_size_20
-        && ops[2].code() == opcode::equal;
+    return is_pay_script_hash_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_script_hash_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count != 3u)
+        return false;
+
+    auto op = ops.begin();
+    return (op++)->code() == opcode::hash160 &&
+        (op++)->code() == opcode::push_size_20 &&
+        op->code() == opcode::equal;
 }
 
 constexpr bool script::is_pay_witness_key_hash_pattern(

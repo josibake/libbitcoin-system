@@ -109,6 +109,12 @@ constexpr opcode operation::opcode_from_nonnegative(uint8_t value) NOEXCEPT
 constexpr opcode operation::minimal_opcode_from_data(
     const data_chunk& data) NOEXCEPT
 {
+    return minimal_opcode_from_data(data_slice{ data });
+}
+
+constexpr opcode operation::minimal_opcode_from_data(
+    const data_slice& data) NOEXCEPT
+{
     const auto size = data.size();
 
     if (is_one(size))
@@ -134,6 +140,12 @@ constexpr opcode operation::minimal_opcode_from_data(
 // Restricted to sized data, avoids conversion to numeric opcodes.
 constexpr opcode operation::nominal_opcode_from_data(
     const data_chunk& data) NOEXCEPT
+{
+    return nominal_opcode_from_data(data_slice{ data });
+}
+
+constexpr opcode operation::nominal_opcode_from_data(
+    const data_slice& data) NOEXCEPT
 {
     return opcode_from_size(data.size());
 }

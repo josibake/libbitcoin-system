@@ -127,6 +127,16 @@ public:
         return operation::is_threshold(code_);
     }
 
+    constexpr bool is_minimal_push() const NOEXCEPT
+    {
+        return code_ == operation::minimal_opcode_from_data(data_);
+    }
+
+    constexpr bool is_nominal_push() const NOEXCEPT
+    {
+        return code_ == operation::nominal_opcode_from_data(data_);
+    }
+
     bool as_unsigned32(uint32_t& value) const NOEXCEPT
     {
         if (is_nonnegative())
@@ -395,6 +405,69 @@ public:
     bool is_pay_public_key_pattern() const NOEXCEPT
     {
         return script::is_pay_public_key_pattern(*this, operations_);
+    }
+
+    bool is_relaxed_push_pattern() const NOEXCEPT
+    {
+        return script::is_relaxed_push_pattern(*this);
+    }
+
+    bool is_nominal_push_pattern() const NOEXCEPT
+    {
+        return script::is_nominal_push_pattern(*this, operations_);
+    }
+
+    bool is_pay_witness_pattern() const NOEXCEPT
+    {
+        return script::is_pay_witness_pattern(*this, operations_);
+    }
+
+    bool is_pay_script_hash_pattern() const NOEXCEPT
+    {
+        return script::is_pay_script_hash_pattern(*this, operations_);
+    }
+
+    bool is_pay_to_witness(uint32_t active_flags) const NOEXCEPT
+    {
+        return script::is_enabled(active_flags, flags::bip141_rule) &&
+            is_pay_witness_pattern();
+    }
+
+    bool is_pay_to_script_hash(uint32_t active_flags) const NOEXCEPT
+    {
+        return script::is_enabled(active_flags, flags::bip16_rule) &&
+            is_pay_script_hash_pattern();
+    }
+
+    data_slice witness_program() const NOEXCEPT
+    {
+        if (!is_pay_witness_pattern())
+            return {};
+
+        auto op = begin();
+        return (++op)->data();
+    }
+
+    uint8_t version_value() const NOEXCEPT
+    {
+        return is_pay_witness_pattern() ?
+            operation::opcode_to_nonnegative(begin()->code()) :
+            to_value(script_version::unversioned);
+    }
+
+    script_version version() const NOEXCEPT
+    {
+        switch (version_value())
+        {
+            case 0:
+                return script_version::segwit;
+            case 1:
+                return script_version::taproot;
+            case to_value(script_version::unversioned):
+                return script_version::unversioned;
+            default:
+                return script_version::reserved;
+        }
     }
 
     bool is_pay_key_hash_pattern() const NOEXCEPT

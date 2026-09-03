@@ -46,7 +46,9 @@ public:
     static constexpr opcode opcode_from_positive(uint8_t value) NOEXCEPT;
     static constexpr opcode opcode_from_nonnegative(uint8_t value) NOEXCEPT;
     static constexpr opcode minimal_opcode_from_data(const data_chunk& data) NOEXCEPT;
+    static constexpr opcode minimal_opcode_from_data(const data_slice& data) NOEXCEPT;
     static constexpr opcode nominal_opcode_from_data(const data_chunk& data) NOEXCEPT;
+    static constexpr opcode nominal_opcode_from_data(const data_slice& data) NOEXCEPT;
 
     /// Categories of opcodes.
     /// -----------------------------------------------------------------------

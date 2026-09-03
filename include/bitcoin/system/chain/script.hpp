@@ -73,7 +73,18 @@ public:
     static constexpr bool is_sign_script_hash_pattern(const operations& ops) NOEXCEPT;
     static bool is_coinbase_pattern(const operations& ops, size_t height) NOEXCEPT;
 
-    /// Batchable patterns over owning or borrowed operation ranges.
+    /// Consensus patterns over owning or borrowed operation ranges.
+    template <typename Range>
+    static constexpr bool is_relaxed_push_pattern(const Range& ops) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_nominal_push_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_witness_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_script_hash_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
     template <typename Range>
     static constexpr bool is_pay_public_key_pattern(const Range& ops,
         size_t count) NOEXCEPT;

@@ -68,6 +68,25 @@ static void check_matches_script(const data_chunk& encoded)
     BOOST_CHECK_EQUAL(&view.ops(), &view);
     BOOST_CHECK_EQUAL(view.is_pay_public_key_pattern(),
         script::is_pay_public_key_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_relaxed_push_pattern(),
+        script::is_relaxed_push_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_nominal_push_pattern(),
+        script::is_nominal_push_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_witness_pattern(),
+        script::is_pay_witness_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_script_hash_pattern(),
+        script::is_pay_script_hash_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_to_witness(flags::bip141_rule),
+        expected.is_pay_to_witness(flags::bip141_rule));
+    BOOST_CHECK_EQUAL(view.is_pay_to_script_hash(flags::bip16_rule),
+        expected.is_pay_to_script_hash(flags::bip16_rule));
+    BOOST_CHECK(view.version() == expected.version());
+    BOOST_CHECK_EQUAL(view.version_value(), expected.version_value());
+
+    const auto actual_program = view.witness_program();
+    const auto& expected_program = *expected.witness_program();
+    BOOST_CHECK_EQUAL_COLLECTIONS(actual_program.begin(), actual_program.end(),
+        expected_program.begin(), expected_program.end());
     BOOST_CHECK_EQUAL(view.is_pay_key_hash_pattern(),
         script::is_pay_key_hash_pattern(expected.ops()));
     BOOST_CHECK_EQUAL(view.is_pay_multisig_standard_pattern(),
@@ -111,6 +130,10 @@ static void check_matches_script(const data_chunk& encoded)
             operation.is_nonnegative());
         BOOST_CHECK_EQUAL(actual->is_timelock(), operation.is_timelock());
         BOOST_CHECK_EQUAL(actual->is_threshold(), operation.is_threshold());
+        BOOST_CHECK_EQUAL(actual->is_minimal_push(),
+            operation.is_minimal_push());
+        BOOST_CHECK_EQUAL(actual->is_nominal_push(),
+            operation.is_nominal_push());
         BOOST_CHECK_EQUAL(actual->is_unsigned32(), operation.is_unsigned32());
 
         uint32_t expected_unsigned{}, actual_unsigned{};
@@ -207,7 +230,7 @@ BOOST_AUTO_TEST_CASE(script_view__mixed_valid_then_underflow__matches_script)
     check_matches_script(encoded);
 }
 
-BOOST_AUTO_TEST_CASE(script_view__batch_patterns__match_script)
+BOOST_AUTO_TEST_CASE(script_view__consensus_patterns__match_script)
 {
     const auto compressed = base16_chunk(
         "03dcfd9e580de35d8c2060d76dbf9e5561fe20febd2e64380e860a4d59f15ac864");
@@ -240,7 +263,11 @@ BOOST_AUTO_TEST_CASE(script_view__batch_patterns__match_script)
             operation{ opcode::push_positive_1 },
             operation{ opcode::push_positive_3 },
             operation{ opcode::within } },
-        make_tapscript_multisig_ops(3)
+        make_tapscript_multisig_ops(3),
+        { operation{ opcode::hash160 }, operation{ hash, false },
+            operation{ opcode::equal } },
+        script::to_pay_witness_pattern(0u, hash),
+        script::to_pay_witness_pattern(1u, to_chunk(hash_digest{}))
     };
 
     for (const auto& ops: patterns)
