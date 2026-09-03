@@ -27,15 +27,13 @@
 #include <bitcoin/system/chain/output.hpp>
 #include <bitcoin/system/chain/script.hpp>
 #include <bitcoin/system/define.hpp>
-#include <bitcoin/system/hash/hash.hpp>
 #include <bitcoin/system/math/math.hpp>
-#include <bitcoin/system/stream/stream.hpp>
 
 namespace libbitcoin {
 namespace system {
 namespace chain {
 
-// Signature hashing (version 1 - taproot).
+// Signature hash source (version 1 - taproot).
 // ----------------------------------------------------------------------------
 
 // static
@@ -53,103 +51,40 @@ uint32_t transaction::subscript_v1(const script& script) NOEXCEPT
         possible_narrow_and_sign_cast<uint32_t>(sub1(next));
 }
 
-// ext_flags and annex flag are combined into one byte, who knows why.
-uint8_t transaction::spend_type_v1(bool annex, bool tapscript) const NOEXCEPT
+const hash_digest&
+transaction::sighash_source::single_hash_points() const NOEXCEPT
 {
-    const auto ext_flag = to_value(tapscript ? extension::tapscript :
-        extension::taproot);
-
-    return set_right(shift_left(ext_flag), zero, annex);
+    return tx_.single_hash_points();
 }
 
-// NOT THREAD SAFE
-// Concurrent input validation for a tx unsafe due to on-demand hash caching.
-// TODO: may be more optimal to not cache single output hash as use is rare.
-bool transaction::version1_sighash(hash_digest& out,
-    const input_iterator& input, const script& script, uint64_t value,
-    const hash_cptr& tapleaf, uint8_t sighash_flags) const NOEXCEPT
+const hash_digest&
+transaction::sighash_source::single_hash_amounts() const NOEXCEPT
 {
-    constexpr uint8_t epoch{};
-    const auto& in = **input;
-    const auto& annex = in.witness().annex();
+    return tx_.single_hash_amounts();
+}
 
-    // Mask anyone_can_pay, and set hash_all by default.
-    // sighash_flags previously verified (see schnorr_split).
-    const auto flag = mask_sighash(sighash_flags);
-    const auto anyone = is_anyone_can_pay(sighash_flags);
-    const auto single = (flag == coverage::hash_single);
-    const auto all = (flag == coverage::hash_all);
+const hash_digest&
+transaction::sighash_source::single_hash_scripts() const NOEXCEPT
+{
+    return tx_.single_hash_scripts();
+}
 
-    // ************************************************************************
-    // CONSENSUS: Guards public interface only, node always populates prevout.
-    // ************************************************************************
-    if (anyone && is_null(in.prevout))
-        return false;
+const hash_digest&
+transaction::sighash_source::single_hash_sequences() const NOEXCEPT
+{
+    return tx_.single_hash_sequences();
+}
 
-    // ************************************************************************
-    // CONSENSUS: Taproot finally eliminates one_hash (null_hash in v0) return.
-    // ************************************************************************
-    if (single && output_overflow(input_index(input)))
-        return false;
+const hash_digest&
+transaction::sighash_source::single_hash_outputs() const NOEXCEPT
+{
+    return tx_.single_hash_outputs();
+}
 
-    // Create tagged hash writer.
-    stream::out::fast stream{ out };
-    hash::sha256t::fast<"TapSighash"> sink{ stream };
-
-    sink.write_byte(epoch);
-    sink.write_byte(sighash_flags);
-    sink.write_4_bytes_little_endian(version_);
-    sink.write_4_bytes_little_endian(locktime_);
-
-    if (!anyone)
-    {
-        sink.write_bytes(single_hash_points());
-        sink.write_bytes(single_hash_amounts());
-        sink.write_bytes(single_hash_scripts());
-        sink.write_bytes(single_hash_sequences());
-    }
-
-    if (all)
-    {
-        sink.write_bytes(single_hash_outputs());
-    }
-
-    sink.write_byte(spend_type_v1(annex, !is_null(tapleaf)));
-
-    if (anyone)
-    {
-        in.point().to_data(sink);
-        sink.write_8_bytes_little_endian(value);
-        in.prevout->script().to_data(sink, true);
-        sink.write_4_bytes_little_endian(in.sequence());
-    }
-    else
-    {
-        sink.write_4_bytes_little_endian(input_index(input));
-    }
-
-    if (annex)
-    {
-        sink.write_bytes(annex.hash(true));
-    }
-
-    if (single)
-    {
-        // Hash is cached for use with each single sigop in the same script.
-        sink.write_bytes(outputs_->at(input_index(input))->get_hash());
-    }
-
-    // Additional for tapscript [bip342].
-    // Above midstate is cacheable for use when same sigop flag for script.
-    if (tapleaf)
-    {
-        sink.write_bytes(*tapleaf);
-        sink.write_byte(to_value(key_version::tapscript));
-        sink.write_4_bytes_little_endian(subscript_v1(script));
-    }
-
-    sink.flush();
-    return true;
+const hash_digest& transaction::sighash_source::single_hash_output(
+    size_t output) const NOEXCEPT
+{
+    return tx_.outputs_->at(output)->get_hash();
 }
 
 } // namespace chain

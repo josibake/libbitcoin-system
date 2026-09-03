@@ -104,6 +104,23 @@ BOOST_AUTO_TEST_CASE(script_view__default__invalid)
     BOOST_CHECK(!script_view{}.is_valid());
 }
 
+BOOST_AUTO_TEST_CASE(script_view__to_data__prefix_and_body__unchanged)
+{
+    const auto encoded = base16_chunk("4c03010203ac");
+    const script_view instance{ encoded };
+    data_chunk prefixed(instance.serialized_size(true));
+    stream::out::fast stream{ prefixed };
+    write::bytes::fast sink{ stream };
+
+    instance.to_data(sink, true);
+    sink.flush();
+
+    auto expected = to_chunk(possible_narrow_cast<uint8_t>(encoded.size()));
+    extend(expected, encoded);
+    BOOST_CHECK_EQUAL(prefixed, expected);
+    BOOST_CHECK_EQUAL(instance.serialized_size(false), encoded.size());
+}
+
 BOOST_AUTO_TEST_CASE(script_view__all_opcodes_and_push_sizes__matches_script)
 {
     data_chunk encoded{};

@@ -21,7 +21,6 @@
 
 #include <optional>
 #include <bitcoin/system/chain/batch/signatures.hpp>
-#include <bitcoin/system/chain/enums/coverage.hpp>
 #include <bitcoin/system/chain/context.hpp>
 #include <bitcoin/system/chain/input.hpp>
 #include <bitcoin/system/chain/output.hpp>
@@ -265,12 +264,6 @@ private:
     code connect_input(const context& ctx, const input_iterator& it,
         const signatures& capture) const NOEXCEPT;
 
-    // Patterns.
-    // ------------------------------------------------------------------------
-
-    static constexpr coverage mask_sighash(uint8_t sighash_flags) NOEXCEPT;
-    static constexpr bool is_anyone_can_pay(uint8_t sighash_flags) NOEXCEPT;
-
     // Caching.
     // ------------------------------------------------------------------------
 
@@ -300,28 +293,46 @@ private:
     // Signature hashing.
     // ------------------------------------------------------------------------
 
+    class sighash_source final
+    {
+    public:
+        sighash_source(const transaction& tx,
+            const input_iterator& input) NOEXCEPT;
+
+        bool is_coinbase() const NOEXCEPT;
+        size_t inputs() const NOEXCEPT;
+        size_t outputs() const NOEXCEPT;
+        uint32_t version() const NOEXCEPT;
+        uint32_t locktime() const NOEXCEPT;
+        uint32_t input_index() const NOEXCEPT;
+        uint32_t sequence(size_t input) const NOEXCEPT;
+        void write_point(writer& sink, size_t input) const NOEXCEPT;
+        void write_output(writer& sink, size_t output) const NOEXCEPT;
+        bool has_prevout() const NOEXCEPT;
+        void write_prevout_script(writer& sink) const NOEXCEPT;
+        bool has_annex() const NOEXCEPT;
+        hash_digest annex_hash() const NOEXCEPT;
+
+        const hash_digest& double_hash_points() const NOEXCEPT;
+        const hash_digest& double_hash_sequences() const NOEXCEPT;
+        const hash_digest& double_hash_outputs() const NOEXCEPT;
+        hash_digest double_hash_output(size_t output) const NOEXCEPT;
+
+        const hash_digest& single_hash_points() const NOEXCEPT;
+        const hash_digest& single_hash_amounts() const NOEXCEPT;
+        const hash_digest& single_hash_scripts() const NOEXCEPT;
+        const hash_digest& single_hash_sequences() const NOEXCEPT;
+        const hash_digest& single_hash_outputs() const NOEXCEPT;
+        const hash_digest& single_hash_output(size_t output) const NOEXCEPT;
+
+    private:
+        const transaction& tx_;
+        input_iterator input_;
+        uint32_t index_;
+    };
+
     static uint32_t subscript_v1(const script& script) NOEXCEPT;
-    uint8_t spend_type_v1(bool annex, bool tapscript) const NOEXCEPT;
     uint32_t input_index(const input_iterator& input) const NOEXCEPT;
-
-    bool output_overflow(size_t input) const NOEXCEPT;
-    hash_digest output_hash_v0(const input_iterator& input) const NOEXCEPT;
-
-    void signature_hash_single(writer& sink, const input_iterator& input,
-        const script& subscript, uint8_t sighash_flags) const NOEXCEPT;
-    void signature_hash_none(writer& sink, const input_iterator& input,
-        const script& subscript, uint8_t sighash_flags) const NOEXCEPT;
-    void signature_hash_all(writer& sink, const input_iterator& input,
-        const script& subscript, uint8_t sighash_flags) const NOEXCEPT;
-
-    void unversioned_sighash(hash_digest& out, const input_iterator& input,
-        const script& subscript, uint8_t sighash_flags) const NOEXCEPT;
-    void version0_sighash(hash_digest& out, const input_iterator& input,
-        const script& subscript, uint64_t value,
-        uint8_t sighash_flags) const NOEXCEPT;
-    bool version1_sighash(hash_digest& out, const input_iterator& input,
-        const script& script, uint64_t value, const hash_cptr& tapleaf,
-        uint8_t sighash_flags) const NOEXCEPT;
 
     // ------------------------------------------------------------------------
 
@@ -355,8 +366,6 @@ typedef std::shared_ptr<const transaction_cptrs> transactions_cptr;
 } // namespace chain
 } // namespace system
 } // namespace libbitcoin
-
-#include <bitcoin/system/impl/chain/transaction_patterns.ipp>
 
 namespace std
 {

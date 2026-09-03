@@ -291,6 +291,7 @@ include_bitcoin_system_chain_HEADERS = \
     ${srcdir}/../../include/bitcoin/system/chain/point.hpp \
     ${srcdir}/../../include/bitcoin/system/chain/prevout.hpp \
     ${srcdir}/../../include/bitcoin/system/chain/script.hpp \
+    ${srcdir}/../../include/bitcoin/system/chain/sighash.hpp \
     ${srcdir}/../../include/bitcoin/system/chain/stripper.hpp \
     ${srcdir}/../../include/bitcoin/system/chain/taproot.hpp \
     ${srcdir}/../../include/bitcoin/system/chain/tapscript.hpp \
@@ -502,7 +503,6 @@ include_bitcoin_system_impl_chain_HEADERS = \
     ${srcdir}/../../include/bitcoin/system/impl/chain/operation_patterns.ipp \
     ${srcdir}/../../include/bitcoin/system/impl/chain/script_patterns.ipp \
     ${srcdir}/../../include/bitcoin/system/impl/chain/tapscript.ipp \
-    ${srcdir}/../../include/bitcoin/system/impl/chain/transaction_patterns.ipp \
     ${srcdir}/../../include/bitcoin/system/impl/chain/witness_patterns.ipp
 
 include_bitcoin_system_impl_datadir = \

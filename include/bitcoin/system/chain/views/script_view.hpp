@@ -28,6 +28,7 @@
 #include <bitcoin/system/data/data.hpp>
 #include <bitcoin/system/define.hpp>
 #include <bitcoin/system/math/math.hpp>
+#include <bitcoin/system/stream/stream.hpp>
 
 namespace libbitcoin {
 namespace system {
@@ -295,6 +296,20 @@ public:
     constexpr bool empty() const NOEXCEPT
     {
         return script_.empty();
+    }
+
+    constexpr size_t serialized_size(bool prefix) const NOEXCEPT
+    {
+        return ceilinged_add(script_.size(),
+            prefix ? variable_size(script_.size()) : zero);
+    }
+
+    void to_data(writer& sink, bool prefix) const NOEXCEPT
+    {
+        if (prefix)
+            sink.write_variable(script_.size());
+
+        sink.write_bytes(script_);
     }
 
     const_iterator begin() const NOEXCEPT

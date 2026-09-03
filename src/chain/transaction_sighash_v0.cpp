@@ -18,78 +18,31 @@
  */
 #include <bitcoin/system/chain/transaction.hpp>
 
-#include <bitcoin/system/chain/enums/coverage.hpp>
-#include <bitcoin/system/chain/input.hpp>
-#include <bitcoin/system/chain/output.hpp>
-#include <bitcoin/system/chain/script.hpp>
 #include <bitcoin/system/define.hpp>
-#include <bitcoin/system/hash/hash.hpp>
-#include <bitcoin/system/stream/stream.hpp>
 
 namespace libbitcoin {
 namespace system {
 namespace chain {
 
-// Signature hashing (version 0 - segwit).
+// Signature hash source (version 0 - segwit).
 // ----------------------------------------------------------------------------
 
-//*****************************************************************************
-// CONSENSUS: if index exceeds outputs in signature hash, return null_hash.
-//*****************************************************************************
-hash_digest transaction::output_hash_v0(
-    const input_iterator& input) const NOEXCEPT
+const hash_digest&
+transaction::sighash_source::double_hash_points() const NOEXCEPT
 {
-    const auto index = input_index(input);
-    if (output_overflow(index))
-        return null_hash;
-
-    hash_digest digest{};
-    stream::out::fast stream{ digest };
-    hash::sha256x2::fast sink{ stream };
-    outputs_->at(index)->to_data(sink);
-    sink.flush();
-    return digest;
+    return tx_.double_hash_points();
 }
 
-// ****************************************************************************
-// CONSENSUS: sighash flags are carried in a single byte but are encoded as 4
-// bytes in the signature hash preimage serialization.
-// ****************************************************************************
-
-// NOT THREAD SAFE
-// Concurrent input validation for a tx unsafe due to on-demand hash caching.
-void transaction::version0_sighash(hash_digest& out,
-    const input_iterator& input, const script& subscript, uint64_t value,
-    uint8_t sighash_flags) const NOEXCEPT
+const hash_digest&
+transaction::sighash_source::double_hash_sequences() const NOEXCEPT
 {
-    // Mask anyone_can_pay and unused bits, and set hash_all by default.
-    const auto flag = mask_sighash(sighash_flags);
-    const auto anyone = is_anyone_can_pay(sighash_flags);
-    const auto single = (flag == coverage::hash_single);
-    const auto all = (flag == coverage::hash_all);
+    return tx_.double_hash_sequences();
+}
 
-    // Create hash writer.
-    stream::out::fast stream{ out };
-    hash::sha256x2::fast sink{ stream };
-
-    sink.write_4_bytes_little_endian(version_);
-    sink.write_bytes(!anyone ? double_hash_points() : null_hash);
-    sink.write_bytes(!anyone && all ? double_hash_sequences() : null_hash);
-
-    (*input)->point().to_data(sink);
-    subscript.to_data(sink, true);
-    sink.write_8_bytes_little_endian(value);
-    sink.write_4_bytes_little_endian((*input)->sequence());
-
-    if (single)
-        sink.write_bytes(output_hash_v0(input));
-    else
-        sink.write_bytes(all ? double_hash_outputs() : null_hash);
-
-    sink.write_4_bytes_little_endian(locktime_);
-    sink.write_4_bytes_little_endian(sighash_flags);
-
-    sink.flush();
+const hash_digest&
+transaction::sighash_source::double_hash_outputs() const NOEXCEPT
+{
+    return tx_.double_hash_outputs();
 }
 
 } // namespace chain

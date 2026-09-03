@@ -22,203 +22,101 @@
 #include <bitcoin/system/chain/input.hpp>
 #include <bitcoin/system/chain/output.hpp>
 #include <bitcoin/system/chain/script.hpp>
-#include <bitcoin/system/endian/endian.hpp>
 #include <bitcoin/system/define.hpp>
-#include <bitcoin/system/hash/hash.hpp>
-#include <bitcoin/system/math/math.hpp>
 #include <bitcoin/system/stream/stream.hpp>
 
 namespace libbitcoin {
 namespace system {
 namespace chain {
 
-// Signature hashing (unversioned).
+// Signature hash source (common).
 // ----------------------------------------------------------------------------
 
-static const auto& null_output() NOEXCEPT
+transaction::sighash_source::sighash_source(const transaction& tx,
+    const input_iterator& input) NOEXCEPT
+  : tx_(tx), input_(input), index_(tx.input_index(input))
 {
-    static const auto null = output{}.to_data();
-    return null;
 }
 
-static const auto& empty_script() NOEXCEPT
+bool transaction::sighash_source::is_coinbase() const NOEXCEPT
 {
-    static const auto empty = script{}.to_data(true);
-    return empty;
+    return tx_.is_coinbase();
 }
 
-static const auto& zero_sequence() NOEXCEPT
+size_t transaction::sighash_source::inputs() const NOEXCEPT
 {
-    static const auto sequence = to_little_endian<uint32_t>(0);
-    return sequence;
+    return tx_.inputs_->size();
 }
 
-// ****************************************************************************
-// CONSENSUS: sighash flags are carried in a single byte but are encoded as 4
-// bytes in the signature hash preimage serialization.
-// ****************************************************************************
-
-void transaction::signature_hash_single(writer& sink,
-    const input_iterator& input, const script& subscript,
-    uint8_t sighash_flags) const NOEXCEPT
+size_t transaction::sighash_source::outputs() const NOEXCEPT
 {
-    const auto write_inputs = [this, &input, &subscript, sighash_flags](
-        writer& sink) NOEXCEPT
-    {
-        input_cptrs::const_iterator in;
-        const auto anyone = is_anyone_can_pay(sighash_flags);
-        sink.write_variable(anyone ? one : inputs_->size());
-
-        for (in = inputs_->begin(); !anyone && in != input; ++in)
-        {
-            (*in)->point().to_data(sink);
-            sink.write_bytes(empty_script());
-            sink.write_bytes(zero_sequence());
-        }
-
-        (*input)->point().to_data(sink);
-        subscript.to_data(sink, true);
-        sink.write_4_bytes_little_endian((*input)->sequence());
-
-        for (++in; !anyone && in != inputs_->end(); ++in)
-        {
-            (*in)->point().to_data(sink);
-            sink.write_bytes(empty_script());
-            sink.write_bytes(zero_sequence());
-        }
-    };
-
-    const auto write_outputs = [this, &input](writer& sink) NOEXCEPT
-    {
-        const auto index = input_index(input);
-        sink.write_variable(add1(index));
-
-        for (size_t output{}; output < index; ++output)
-            sink.write_bytes(null_output());
-
-        // Guarded by unversioned_sighash().
-        outputs_->at(index)->to_data(sink);
-    };
-
-    sink.write_4_bytes_little_endian(version_);
-    write_inputs(sink);
-    write_outputs(sink);
-    sink.write_4_bytes_little_endian(locktime_);
-    sink.write_4_bytes_little_endian(sighash_flags);
+    return tx_.outputs_->size();
 }
 
-void transaction::signature_hash_none(writer& sink,
-    const input_iterator& input, const script& subscript,
-    uint8_t sighash_flags) const NOEXCEPT
+uint32_t transaction::sighash_source::version() const NOEXCEPT
 {
-    const auto write_inputs = [this, &input, &subscript, sighash_flags](
-        writer& sink) NOEXCEPT
-    {
-        input_cptrs::const_iterator in;
-        const auto anyone = is_anyone_can_pay(sighash_flags);
-        sink.write_variable(anyone ? one : inputs_->size());
-
-        for (in = inputs_->begin(); !anyone && in != input; ++in)
-        {
-            (*in)->point().to_data(sink);
-            sink.write_bytes(empty_script());
-            sink.write_bytes(zero_sequence());
-        }
-
-        (*input)->point().to_data(sink);
-        subscript.to_data(sink, true);
-        sink.write_4_bytes_little_endian((*input)->sequence());
-
-        for (++in; !anyone && in != inputs_->end(); ++in)
-        {
-            (*in)->point().to_data(sink);
-            sink.write_bytes(empty_script());
-            sink.write_bytes(zero_sequence());
-        }
-    };
-
-    sink.write_4_bytes_little_endian(version_);
-    write_inputs(sink);
-    sink.write_variable(zero);
-    sink.write_4_bytes_little_endian(locktime_);
-    sink.write_4_bytes_little_endian(sighash_flags);
+    return tx_.version_;
 }
 
-void transaction::signature_hash_all(writer& sink,
-    const input_iterator& input, const script& subscript,
-    uint8_t sighash_flags) const NOEXCEPT
+uint32_t transaction::sighash_source::locktime() const NOEXCEPT
 {
-    const auto write_inputs = [this, &input, &subscript, sighash_flags](
-        writer& sink) NOEXCEPT
-    {
-        input_cptrs::const_iterator in;
-        const auto anyone = is_anyone_can_pay(sighash_flags);
-        sink.write_variable(anyone ? one : inputs_->size());
-
-        for (in = inputs_->begin(); !anyone && in != input; ++in)
-        {
-            (*in)->point().to_data(sink);
-            sink.write_bytes(empty_script());
-            sink.write_4_bytes_little_endian((*in)->sequence());
-        }
-
-        (*input)->point().to_data(sink);
-        subscript.to_data(sink, true);
-        sink.write_4_bytes_little_endian((*input)->sequence());
-
-        for (++in; !anyone && in != inputs_->end(); ++in)
-        {
-            (*in)->point().to_data(sink);
-            sink.write_bytes(empty_script());
-            sink.write_4_bytes_little_endian((*in)->sequence());
-        }
-    };
-
-    const auto write_outputs = [this](writer& sink) NOEXCEPT
-    {
-        sink.write_variable(outputs_->size());
-        for (const auto& output: *outputs_)
-            output->to_data(sink);
-    };
-
-    sink.write_4_bytes_little_endian(version_);
-    write_inputs(sink);
-    write_outputs(sink);
-    sink.write_4_bytes_little_endian(locktime_);
-    sink.write_4_bytes_little_endian(sighash_flags);
+    return tx_.locktime_;
 }
 
-void transaction::unversioned_sighash(hash_digest& out,
-    const input_iterator& input, const script& subscript,
-    uint8_t sighash_flags) const NOEXCEPT
+uint32_t transaction::sighash_source::input_index() const NOEXCEPT
 {
-    // Mask anyone_can_pay and unused bits, and set hash_all by default.
-    const auto flag = mask_sighash(sighash_flags);
+    return index_;
+}
 
-    if (flag == coverage::hash_single && output_overflow(input_index(input)))
-    {
-        out = one_hash;
-        return;
-    }
+uint32_t transaction::sighash_source::sequence(size_t input) const NOEXCEPT
+{
+    return tx_.inputs_->at(input)->sequence();
+}
 
-    // Create hash writer.
-    stream::out::fast stream{ out };
+void transaction::sighash_source::write_point(writer& sink,
+    size_t input) const NOEXCEPT
+{
+    tx_.inputs_->at(input)->point().to_data(sink);
+}
+
+void transaction::sighash_source::write_output(writer& sink,
+    size_t output) const NOEXCEPT
+{
+    tx_.outputs_->at(output)->to_data(sink);
+}
+
+bool transaction::sighash_source::has_prevout() const NOEXCEPT
+{
+    return !is_null((*input_)->prevout);
+}
+
+void transaction::sighash_source::write_prevout_script(
+    writer& sink) const NOEXCEPT
+{
+    BC_ASSERT(has_prevout());
+    (*input_)->prevout->script().to_data(sink, true);
+}
+
+bool transaction::sighash_source::has_annex() const NOEXCEPT
+{
+    return static_cast<bool>((*input_)->witness().annex());
+}
+
+hash_digest transaction::sighash_source::annex_hash() const NOEXCEPT
+{
+    return (*input_)->witness().annex().hash(true);
+}
+
+hash_digest transaction::sighash_source::double_hash_output(
+    size_t output) const NOEXCEPT
+{
+    hash_digest digest{};
+    stream::out::fast stream{ digest };
     hash::sha256x2::fast sink{ stream };
-
-    switch (flag)
-    {
-        case coverage::hash_single:
-            signature_hash_single(sink, input, subscript, sighash_flags);
-            break;
-        case coverage::hash_none:
-            signature_hash_none(sink, input, subscript, sighash_flags);
-            break;
-        default:
-        case coverage::hash_all:
-            signature_hash_all(sink, input, subscript, sighash_flags);
-    }
+    write_output(sink, output);
 
     sink.flush();
+    return digest;
 }
 
 } // namespace chain

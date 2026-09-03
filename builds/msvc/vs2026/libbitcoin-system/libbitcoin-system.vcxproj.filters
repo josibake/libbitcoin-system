@@ -929,6 +929,9 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\script.hpp">
       <Filter>include\bitcoin\system\chain</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\sighash.hpp">
+      <Filter>include\bitcoin\system\chain</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\stripper.hpp">
       <Filter>include\bitcoin\system\chain</Filter>
     </ClInclude>
@@ -1799,9 +1802,6 @@
       <Filter>include\bitcoin\system\impl\chain</Filter>
     </None>
     <None Include="..\..\..\..\include\bitcoin\system\impl\chain\tapscript.ipp">
-      <Filter>include\bitcoin\system\impl\chain</Filter>
-    </None>
-    <None Include="..\..\..\..\include\bitcoin\system\impl\chain\transaction_patterns.ipp">
       <Filter>include\bitcoin\system\impl\chain</Filter>
     </None>
     <None Include="..\..\..\..\include\bitcoin\system\impl\chain\witness_patterns.ipp">

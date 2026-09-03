@@ -425,6 +425,7 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\point.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\prevout.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\script.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\sighash.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\stripper.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\taproot.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\tapscript.hpp" />
@@ -717,7 +718,6 @@
     <None Include="..\..\..\..\include\bitcoin\system\impl\chain\operation_patterns.ipp" />
     <None Include="..\..\..\..\include\bitcoin\system\impl\chain\script_patterns.ipp" />
     <None Include="..\..\..\..\include\bitcoin\system\impl\chain\tapscript.ipp" />
-    <None Include="..\..\..\..\include\bitcoin\system\impl\chain\transaction_patterns.ipp" />
     <None Include="..\..\..\..\include\bitcoin\system\impl\chain\witness_patterns.ipp" />
     <None Include="..\..\..\..\include\bitcoin\system\impl\data\array_cast.ipp" />
     <None Include="..\..\..\..\include\bitcoin\system\impl\data\byte_cast.ipp" />
