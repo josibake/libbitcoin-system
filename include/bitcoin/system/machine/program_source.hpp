@@ -203,7 +203,7 @@ public:
         return projection<Stack>(*witness_);
     }
 
-    void set_subscript(size_t position) NOEXCEPT
+    void set_subscript(const operation&, size_t position) NOEXCEPT
     {
         const auto& ops = script_->ops();
         BC_ASSERT(position < ops.size());

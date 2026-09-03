@@ -162,7 +162,8 @@ protected:
     virtual op_error_t op_sha256() NOEXCEPT;
     virtual op_error_t op_hash160() NOEXCEPT;
     virtual op_error_t op_hash256() NOEXCEPT;
-    virtual op_error_t op_codeseparator(size_t position) NOEXCEPT;
+    virtual op_error_t op_codeseparator(const operation& op,
+        size_t position) NOEXCEPT;
     virtual op_error_t op_check_sig() NOEXCEPT;
     virtual op_error_t op_check_sig_verify() NOEXCEPT;
     virtual op_error_t op_check_multisig_verify() NOEXCEPT;

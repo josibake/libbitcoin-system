@@ -980,10 +980,10 @@ op_hash256() NOEXCEPT
 
 TEMPLATE
 error::op_error_t CLASS::
-op_codeseparator(size_t position) NOEXCEPT
+op_codeseparator(const operation& op, size_t position) NOEXCEPT
 {
     // Not thread safe for the script (changes script object metadata).
-    this->set_subscript(position);
+    this->set_subscript(op, position);
     return error::op_success;
 }
 

@@ -348,7 +348,7 @@ run_op(const operation& op, size_t position) NOEXCEPT
         case opcode::hash256:
             return op_hash256();
         case opcode::codeseparator:
-            return op_codeseparator(position);
+            return op_codeseparator(op, position);
         case opcode::checksig:
             return op_check_sig();
         case opcode::checksigverify:

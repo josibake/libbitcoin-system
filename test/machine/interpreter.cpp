@@ -1545,9 +1545,10 @@ BOOST_AUTO_TEST_CASE(interpreter__op_codeseparator__second_op__offset_advanced)
 {
     const script ops_script{ operations{ operation{ opcode::nop }, operation{ opcode::codeseparator }, operation{ opcode::nop } } };
     machine_accessor<contiguous_stack> machine{ ops_script, flags::all_rules };
-    BOOST_REQUIRE_EQUAL(code{ machine->op_codeseparator(1u) }, error::op_success);
-
     const auto& input_script = *machine.transaction().inputs_ptr()->front()->script_ptr();
+    const auto& separator = *std::next(input_script.ops().begin());
+    BOOST_REQUIRE_EQUAL(code{ machine->op_codeseparator(separator, 1u) }, error::op_success);
+
     const auto expected = std::next(input_script.ops().begin(), 2);
     BOOST_REQUIRE(input_script.offset == expected);
 }

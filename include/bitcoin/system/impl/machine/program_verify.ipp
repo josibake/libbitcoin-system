@@ -122,9 +122,9 @@ decode_signature(ec_signature& out, const data_slice& der_signature,
 
 TEMPLATE
 INLINE void CLASS::
-set_subscript(size_t position) NOEXCEPT
+set_subscript(const operation& op, size_t position) NOEXCEPT
 {
-    source_.set_subscript(position);
+    source_.set_subscript(op, position);
 
     // The subscript is changed, so any cached signature hash is stale.
     uncache();

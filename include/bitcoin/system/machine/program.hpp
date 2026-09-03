@@ -192,8 +192,9 @@ protected:
     /// Signature subscripting.
     /// -----------------------------------------------------------------------
 
-    /// Set subscript position to the op after the given position.
-    virtual INLINE void set_subscript(size_t position) NOEXCEPT;
+    /// Set subscript to the op after the given operation and position.
+    virtual INLINE void set_subscript(const operation& op,
+        size_t position) NOEXCEPT;
 
     /// Signature hashing.
     /// -----------------------------------------------------------------------
