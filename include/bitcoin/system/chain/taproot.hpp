@@ -30,15 +30,21 @@ namespace libbitcoin {
 namespace system {
 namespace chain {
 
+class script_view;
+
 class BC_API taproot
 {
 public:
     static hash_digest leaf_hash(uint8_t version,
         const script& script) NOEXCEPT;
+    static hash_digest leaf_hash(uint8_t version,
+        const script_view& script) NOEXCEPT;
     static bool drop_annex(chunk_cptrs& stack) NOEXCEPT;
     static hash_digest commitment_tweak(const tapscript& control,
         const hash_digest& leaf) NOEXCEPT;
     static bool verify_commit(const tapscript& control,
+        const ec_xonly& out_key, const hash_digest& leaf) NOEXCEPT;
+    static bool verify_commit(const data_slice& control,
         const ec_xonly& out_key, const hash_digest& leaf) NOEXCEPT;
 
 protected:

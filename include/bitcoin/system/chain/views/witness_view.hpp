@@ -224,6 +224,11 @@ public:
         return is_zero(elements());
     }
 
+    constexpr data_slice back() const NOEXCEPT
+    {
+        return empty() ? data_slice{} : element_;
+    }
+
     constexpr data_slice annex() const NOEXCEPT
     {
         return elements() > one && !element_.empty() &&

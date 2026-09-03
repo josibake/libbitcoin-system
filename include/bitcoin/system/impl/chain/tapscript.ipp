@@ -46,7 +46,7 @@ inline tapscript::tapscript(const chunk_cptr& control) NOEXCEPT
 }
 
 // static
-inline bool tapscript::is_control(const data_chunk& control) NOEXCEPT
+inline bool tapscript::is_control(const data_slice& control) NOEXCEPT
 {
     // [v:1][p:32][[k:32] 0..128] or [v:1][[n:32] 1..129].
     constexpr auto min = add1(ec_xonly_size * add1(zero));
@@ -82,6 +82,12 @@ inline uint8_t tapscript::version() const NOEXCEPT
     BC_ASSERT(is_valid() && is_control(*control_));
 
     return bit_and(control_->front(), tapscript_mask);
+}
+
+inline const data_chunk& tapscript::data() const NOEXCEPT
+{
+    BC_ASSERT(is_valid() && is_control(*control_));
+    return *control_;
 }
 
 // p -> c[1:33]

@@ -35,6 +35,11 @@ static void check_matches_witness(const data_stack& stack)
     BOOST_CHECK_EQUAL(view.elements(), stack.size());
     BOOST_CHECK_EQUAL(view.empty(), stack.empty());
 
+    if (stack.empty())
+        BOOST_CHECK(view.back().empty());
+    else
+        BOOST_CHECK_EQUAL(view.back(), data_slice{ stack.back() });
+
     for (const auto& element: stack)
     {
         BOOST_REQUIRE(actual != view.end());

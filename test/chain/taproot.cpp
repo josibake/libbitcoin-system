@@ -36,9 +36,12 @@ public:
 
 BOOST_AUTO_TEST_CASE(taproot__leaf_hash__single_leaf_tree__expected)
 {
-    const script leaf(base16_chunk("20d85a959b0290bf19bb89ed43c916be835475d013da4b362117393e25a48229b8ac"), false);
+    const auto bytes = base16_chunk("20d85a959b0290bf19bb89ed43c916be835475d013da4b362117393e25a48229b8ac");
+    const script leaf(bytes, false);
     const auto hash = taproot::leaf_hash(tapscript_version, leaf);
     BOOST_REQUIRE_EQUAL(hash, base16_array("5b75adecf53548f3ec6ad7d78383bf84cc57b55a3127c72b9a2481752dd88b21"));
+    BOOST_REQUIRE_EQUAL(hash,
+        taproot::leaf_hash(tapscript_version, script_view{ bytes }));
 }
 
 BOOST_AUTO_TEST_CASE(taproot__leaf_hash__two_leaf_tree_first__expected)
@@ -113,6 +116,7 @@ BOOST_AUTO_TEST_CASE(taproot__verify_commit__single_leaf_tree__true)
     constexpr ec_xonly out_key = base16_array("147c9c57132f6e7ecddba9800bb0c4449251c92a1e60371ee77557b6620f3ea3");
     constexpr auto leaf = base16_array("5b75adecf53548f3ec6ad7d78383bf84cc57b55a3127c72b9a2481752dd88b21");
     BOOST_REQUIRE(taproot::verify_commit(script_path, out_key, leaf));
+    BOOST_REQUIRE(taproot::verify_commit(data_slice{ *control }, out_key, leaf));
 }
 
 BOOST_AUTO_TEST_CASE(taproot__verify_commit__wrong_parity__false)
@@ -122,6 +126,7 @@ BOOST_AUTO_TEST_CASE(taproot__verify_commit__wrong_parity__false)
     constexpr ec_xonly out_key = base16_array("147c9c57132f6e7ecddba9800bb0c4449251c92a1e60371ee77557b6620f3ea3");
     constexpr auto leaf = base16_array("5b75adecf53548f3ec6ad7d78383bf84cc57b55a3127c72b9a2481752dd88b21");
     BOOST_REQUIRE(!taproot::verify_commit(script_path, out_key, leaf));
+    BOOST_REQUIRE(!taproot::verify_commit(data_slice{ *control }, out_key, leaf));
 }
 
 BOOST_AUTO_TEST_CASE(taproot__verify_commit__two_leaf_tree_with_path__true)
@@ -131,6 +136,7 @@ BOOST_AUTO_TEST_CASE(taproot__verify_commit__two_leaf_tree_with_path__true)
     constexpr ec_xonly out_key = base16_array("712447206d7a5238acc7ff53fbe94a3b64539ad291c7cdbc490b7577e4b17df5");
     constexpr auto leaf = base16_array("8ad69ec7cf41c2a4001fd1f738bf1e505ce2277acdcaa63fe4765192497f47a7");
     BOOST_REQUIRE(taproot::verify_commit(script_path, out_key, leaf));
+    BOOST_REQUIRE(taproot::verify_commit(data_slice{ *control }, out_key, leaf));
 }
 
 BOOST_AUTO_TEST_CASE(taproot__verify_commit__wrong_leaf__false)
@@ -140,6 +146,14 @@ BOOST_AUTO_TEST_CASE(taproot__verify_commit__wrong_leaf__false)
     constexpr ec_xonly out_key = base16_array("712447206d7a5238acc7ff53fbe94a3b64539ad291c7cdbc490b7577e4b17df5");
     constexpr auto leaf = base16_array("f224a923cd0021ab202ab139cc56802ddb92dcfc172b9212261a539df79a112a");
     BOOST_REQUIRE(!taproot::verify_commit(script_path, out_key, leaf));
+    BOOST_REQUIRE(!taproot::verify_commit(data_slice{ *control }, out_key, leaf));
+}
+
+BOOST_AUTO_TEST_CASE(taproot__verify_commit__invalid_control_view__false)
+{
+    constexpr ec_xonly out_key{};
+    constexpr hash_digest leaf{};
+    BOOST_REQUIRE(!taproot::verify_commit(data_slice{}, out_key, leaf));
 }
 
 // drop_annex

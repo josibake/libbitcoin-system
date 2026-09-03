@@ -35,7 +35,7 @@ public:
 
     DEFAULT_COPY_MOVE_DESTRUCT(tapscript);
     
-    static inline bool is_control(const data_chunk& control) NOEXCEPT;
+    static inline bool is_control(const data_slice& control) NOEXCEPT;
 
     inline tapscript(chunk_cptr&& control) NOEXCEPT;
     inline tapscript(const chunk_cptr& control) NOEXCEPT;
@@ -45,6 +45,7 @@ public:
     inline bool parity() const NOEXCEPT;
     inline size_t count() const NOEXCEPT;
     inline uint8_t version() const NOEXCEPT;
+    inline const data_chunk& data() const NOEXCEPT;
     inline const ec_xonly& key() const NOEXCEPT;
     inline const keys_t& keys() const NOEXCEPT;
 
