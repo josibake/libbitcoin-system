@@ -233,6 +233,7 @@ public:
     bool hash_result{ true };
     bool ecdsa_result{ true };
     bool schnorr_result{ true };
+    mutable const uint8_t* verified_point{};
 
     // Number of leading ecdsa verifications to fail before ecdsa_result.
     mutable size_t ecdsa_failures{ 0 };
@@ -271,9 +272,11 @@ protected:
         return one_hash;
     }
 
-    bool verify_ecdsa_signature(const data_chunk&, const hash_digest&,
+    bool verify_ecdsa_signature(const data_slice& point, const hash_digest&,
         const ec_signature&, bool=true) const NOEXCEPT override
     {
+        verified_point = point.data();
+
         if (is_nonzero(ecdsa_failures))
         {
             --ecdsa_failures;
@@ -289,9 +292,10 @@ protected:
         return false;
     }
 
-    bool verify_schnorr_signature(const data_chunk&, const hash_digest&,
+    bool verify_schnorr_signature(const data_slice& point, const hash_digest&,
         const ec_signature&) const NOEXCEPT override
     {
+        verified_point = point.data();
         return schnorr_result;
     }
 };

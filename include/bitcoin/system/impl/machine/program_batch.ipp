@@ -37,7 +37,7 @@ namespace machine {
 
 TEMPLATE
 inline bool CLASS::
-verify_ecdsa_signature(const data_chunk& point, const hash_digest& hash,
+verify_ecdsa_signature(const data_slice& point, const hash_digest& hash,
     const ec_signature& signature, bool capture) const NOEXCEPT
 {
     if (capture_.enabled && capture)
@@ -119,7 +119,7 @@ try_batch_multisig_verification(const chunk_xptrs& points,
 
 TEMPLATE
 inline bool CLASS::
-verify_schnorr_signature(const data_chunk& point, const hash_digest& hash,
+verify_schnorr_signature(const data_slice& point, const hash_digest& hash,
     const ec_signature& signature) const NOEXCEPT
 {
     if (capture_.enabled)
@@ -248,7 +248,7 @@ compress_public_keys(keys_array& out,
 
 TEMPLATE
 inline bool CLASS::
-to_compressed(ec_compressed& out, const data_chunk& point) const NOEXCEPT
+to_compressed(ec_compressed& out, const data_slice& point) const NOEXCEPT
 {
     constexpr auto lo = ec_compressed_size;
     constexpr auto hi = ec_uncompressed_size;
@@ -267,7 +267,7 @@ to_compressed(ec_compressed& out, const data_chunk& point) const NOEXCEPT
 
 TEMPLATE
 const ec_xonly& CLASS::
-as_xonly(const data_chunk& point) const NOEXCEPT
+as_xonly(const data_slice& point) const NOEXCEPT
 {
     // Guarded by consensus rule.
     BC_ASSERT(point.size() == ec_xonly_size);

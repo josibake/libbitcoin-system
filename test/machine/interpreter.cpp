@@ -2207,10 +2207,15 @@ BOOST_AUTO_TEST_CASE(interpreter__op_check_sig__mocked_invalid_signature__false_
 
 BOOST_AUTO_TEST_CASE(interpreter__op_check_sig_verify__mocked_valid_signature__op_success)
 {
-    machine_accessor<contiguous_stack, mocked> machine{ {}, flags::all_rules };
-    machine->push_chunk(data_chunk{ 0x30, 0x01 });
-    machine->push_chunk(data_chunk{ 0x02 });
+    using view_mocked = mock_program<view_contiguous_stack>;
+    machine_accessor<view_contiguous_stack, view_mocked> machine{
+        {}, flags::all_rules };
+    const data_chunk endorsement{ 0x30, 0x01 };
+    const data_chunk key{ 0x02 };
+    machine->push_variant(view_stack_variant{ data_slice{ endorsement } });
+    machine->push_variant(view_stack_variant{ data_slice{ key } });
     BOOST_REQUIRE_EQUAL(code{ machine->op_check_sig_verify() }, error::op_success);
+    BOOST_REQUIRE(machine->verified_point == key.data());
     BOOST_REQUIRE(machine->is_stack_empty());
 }
 
@@ -2296,11 +2301,15 @@ BOOST_AUTO_TEST_CASE(interpreter__op_check_sig_add__mocked_valid_signature__incr
     const auto tapleaf = to_shared(taproot::leaf_hash(tapscript_version, leaf));
     const auto leaf_ptr = to_shared<script>(leaf);
     const signatures capture{};
-    interpreter_accessor<contiguous_stack, mocked> accessor{ tx, in, leaf_ptr, taproot_rules, script_version::taproot, execution, tapleaf, capture };
-    accessor.push_chunk(data_chunk(ec_signature_size, 0x11));
+    using view_mocked = mock_program<view_contiguous_stack>;
+    interpreter_accessor<view_contiguous_stack, view_mocked> accessor{ tx, in, leaf_ptr, taproot_rules, script_version::taproot, execution, tapleaf, capture };
+    const data_chunk endorsement(ec_signature_size, 0x11);
+    const data_chunk key(ec_xonly_size, 0x02);
+    accessor.push_variant(view_stack_variant{ data_slice{ endorsement } });
     accessor.push_signed64(0);
-    accessor.push_chunk(data_chunk(ec_xonly_size, 0x02));
+    accessor.push_variant(view_stack_variant{ data_slice{ key } });
     BOOST_REQUIRE_EQUAL(code{ accessor.op_check_sig_add() }, error::op_success);
+    BOOST_REQUIRE(accessor.verified_point == key.data());
 
     int32_t value{};
     BOOST_REQUIRE(accessor.pop_signed32(value));

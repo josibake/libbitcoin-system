@@ -1017,25 +1017,25 @@ op_check_sig_verify() NOEXCEPT
     if (this->stack_size() < 2u)
         return error::op_check_sig_low_stack;
 
-    const auto key = this->pop_chunk_();
-    const auto endorsement = this->pop_chunk_();
-
     // BIP342:
     if (this->is_enabled(flags::bip342_rule))
     {
-        if (key->empty())
+        const auto key = this->pop_slice_();
+        const auto endorsement = this->pop_slice_();
+
+        if (key.empty())
             return error::op_check_sig_empty_key;
 
-        if (endorsement->empty())
+        if (endorsement.empty())
             return error::op_check_sig_verify1;
 
         // If public key is 32 bytes it is a bip340 schnorr key.
         // If signature is not empty, it is validated against public key.
-        if (key->size() == ec_xonly_size)
+        if (key.size() == ec_xonly_size)
         {
             // Split endorsement into schnorr sig and signature hash flags.
             uint8_t sighash_flags;
-            const auto& sig = this->schnorr_split(sighash_flags, *endorsement);
+            const auto& sig = this->schnorr_split(sighash_flags, endorsement);
             if (sighash_flags == chain::coverage::invalid)
                 return error::op_check_sig_schnorr1;
 
@@ -1045,7 +1045,7 @@ op_check_sig_verify() NOEXCEPT
                 return error::op_check_sig_schnorr2;
 
             // Verify schnorr signature against public key and signature hash.
-            if (!this->verify_schnorr_signature(*key, hash, sig))
+            if (!this->verify_schnorr_signature(key, hash, sig))
                 return error::op_check_sig_schnorr3;
         }
 
@@ -1057,6 +1057,9 @@ op_check_sig_verify() NOEXCEPT
         // known types except that signature validation considered successful.
         return error::op_success;
     }
+
+    const auto key = this->pop_slice_();
+    const auto endorsement = this->pop_chunk_();
 
     if (endorsement->empty())
         return error::op_check_sig_verify2;
@@ -1078,7 +1081,7 @@ op_check_sig_verify() NOEXCEPT
         return error::op_check_sig_verify3;
 
     // Verify ECDSA signature against public key and signature hash.
-    if (!this->verify_ecdsa_signature(*key, hash, sig))
+    if (!this->verify_ecdsa_signature(key, hash, sig))
         return error::op_check_sig_verify4;
 
     // TODO: use sighash and key to generate signature in sign mode.
@@ -1296,10 +1299,10 @@ op_check_sig_add() NOEXCEPT
         return error::op_check_sig_add1;
 
     // Public key (top) is popped.
-    const auto key = this->pop_chunk_();
+    const auto key = this->pop_slice_();
 
     // If public key is empty, script MUST fail and end.
-    if (key->empty())
+    if (key.empty())
         return error::op_check_sig_add2;
 
     // Number (second to top) is popped.
@@ -1309,20 +1312,20 @@ op_check_sig_add() NOEXCEPT
         return error::op_check_sig_add3;
 
     // Signature (third to top) is popped.
-    const auto endorsement = this->pop_chunk_();
+    const auto endorsement = this->pop_slice_();
 
     // If signature is empty, [number] pushed, execution continues.
-    if (endorsement->empty())
+    if (endorsement.empty())
     {
         this->push_signed64(number);
         return error::op_success;
     }
 
-    if (key->size() == ec_xonly_size)
+    if (key.size() == ec_xonly_size)
     {
         // Split endorsement into schnorr signature and signature hash flags.
         uint8_t sighash_flags;
-        const auto& sig = this->schnorr_split(sighash_flags, *endorsement);
+        const auto& sig = this->schnorr_split(sighash_flags, endorsement);
         if (sighash_flags == chain::coverage::invalid)
             return error::op_check_sig_add4;
 
@@ -1332,7 +1335,7 @@ op_check_sig_add() NOEXCEPT
                 return error::op_check_sig_add5;
 
         // Verify schnorr signature against public key and signature hash.
-        if (!this->verify_schnorr_signature(*key, this->cached_hash(), sig))
+        if (!this->verify_schnorr_signature(key, this->cached_hash(), sig))
             return error::op_check_sig_add6;
     }
 

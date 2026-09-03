@@ -169,11 +169,11 @@ protected:
 
     /// Parse schnorr endorsement into ec signature and signature hash flags.
     virtual INLINE const ec_signature& schnorr_split(uint8_t& sighash_flags,
-        const data_chunk& endorsement) const NOEXCEPT;
+        const data_slice& endorsement) const NOEXCEPT;
 
     /// Parse ecdsa endorsement into der signature and signature hash flags.
     virtual INLINE data_slice ecdsa_split(uint8_t& sighash_flags,
-        const data_chunk& endorsement) const NOEXCEPT;
+        const data_slice& endorsement) const NOEXCEPT;
 
     /// Parse der signature into ec signature and signature hash flags.
     virtual INLINE bool decode_signature(ec_signature& out,
@@ -209,12 +209,12 @@ protected:
 
     /// Signature verify (with batching).
     /// -----------------------------------------------------------------------
-    virtual inline bool verify_ecdsa_signature(const data_chunk& point,
+    virtual inline bool verify_ecdsa_signature(const data_slice& point,
         const hash_digest& hash, const ec_signature& signature,
         bool capture=true) const NOEXCEPT;
     virtual inline bool try_batch_multisig_verification(const chunk_xptrs& points,
         const chunk_xptrs& endorsements) const NOEXCEPT;
-    virtual inline bool verify_schnorr_signature(const data_chunk& point,
+    virtual inline bool verify_schnorr_signature(const data_slice& point,
         const hash_digest& hash, const ec_signature& signature) const NOEXCEPT;
 
 private:
@@ -247,8 +247,8 @@ private:
     inline bool compress_public_keys(keys_array& out,
         const chunk_xptrs& keys) const NOEXCEPT;
     inline bool to_compressed(ec_compressed& out,
-        const data_chunk& point) const NOEXCEPT;
-    inline const ec_xonly& as_xonly(const data_chunk& point) const NOEXCEPT;
+        const data_slice& point) const NOEXCEPT;
+    inline const ec_xonly& as_xonly(const data_slice& point) const NOEXCEPT;
 
     // Batching properties.
     inline bool is_threshold_batchable() const NOEXCEPT;

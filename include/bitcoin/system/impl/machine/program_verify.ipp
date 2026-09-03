@@ -61,7 +61,7 @@ is_schnorr_sighash(uint8_t sighash_flags) NOEXCEPT
 TEMPLATE
 INLINE const ec_signature& CLASS::
 schnorr_split(uint8_t& sighash_flags,
-    const data_chunk& endorsement) const NOEXCEPT
+    const data_slice& endorsement) const NOEXCEPT
 {
     using namespace chain;
     using namespace schnorr;
@@ -98,7 +98,7 @@ schnorr_split(uint8_t& sighash_flags,
 TEMPLATE
 INLINE data_slice CLASS::
 ecdsa_split(uint8_t& sighash_flags,
-    const data_chunk& endorsement) const NOEXCEPT
+    const data_slice& endorsement) const NOEXCEPT
 {
     BC_ASSERT(!endorsement.empty());
     sighash_flags = endorsement.back();
