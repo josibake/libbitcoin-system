@@ -280,7 +280,8 @@ public:
 
     void log(const chain::signatures& capture) const NOEXCEPT
     {
-        capture.log(*script_);
+        if (capture.log)
+            capture.log(*script_);
     }
 
 private:

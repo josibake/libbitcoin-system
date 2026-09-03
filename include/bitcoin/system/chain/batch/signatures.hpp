@@ -405,11 +405,10 @@ struct BC_API signatures
     /// Default construction disables batching.
     const bool enabled{};
 
-    /// Replace with operative handlers.
-    const log_handler log
-    {
-        [](const script&) NOEXCEPT {}
-    };
+    /// Optional because materializing a diagnostic script may be expensive.
+    const log_handler log{};
+
+    /// Replace with an operative handler.
     const fire_handler fire
     {
         [](miss, size_t) NOEXCEPT {}
