@@ -234,6 +234,16 @@ pop_chunk_() NOEXCEPT
     return value;
 }
 
+// This avoids allocation when the stack element already refers to bytes.
+TEMPLATE
+INLINE data_slice CLASS::
+pop_slice_() NOEXCEPT
+{
+    const auto value = primary_.peek_slice();
+    drop_();
+    return value;
+}
+
 // This tethers chunks if the stack values are not chunk.
 TEMPLATE
 INLINE bool CLASS::

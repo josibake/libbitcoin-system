@@ -926,7 +926,7 @@ op_ripemd160() NOEXCEPT
     if (this->is_stack_empty())
         return error::op_ripemd160;
 
-    this->push_chunk(rmd160_chunk(*this->pop_chunk_()));
+    this->push_chunk(rmd160_chunk(this->pop_slice_()));
     return error::op_success;
 }
 
@@ -937,7 +937,7 @@ op_sha1() NOEXCEPT
     if (this->is_stack_empty())
         return error::op_sha1;
 
-    this->push_chunk(sha1_chunk(*this->pop_chunk_()));
+    this->push_chunk(sha1_chunk(this->pop_slice_()));
     return error::op_success;
 }
 
@@ -948,7 +948,7 @@ op_sha256() NOEXCEPT
     if (this->is_stack_empty())
         return error::op_sha256;
 
-    this->push_chunk(sha256_chunk(*this->pop_chunk_()));
+    this->push_chunk(sha256_chunk(this->pop_slice_()));
     return error::op_success;
 }
 
@@ -959,7 +959,7 @@ op_hash160() NOEXCEPT
     if (this->is_stack_empty())
         return error::op_hash160;
 
-    this->push_chunk(bitcoin_short_chunk(*this->pop_chunk_()));
+    this->push_chunk(bitcoin_short_chunk(this->pop_slice_()));
     return error::op_success;
 }
 
@@ -970,7 +970,7 @@ op_hash256() NOEXCEPT
     if (this->is_stack_empty())
         return error::op_hash256;
 
-    this->push_chunk(bitcoin_chunk(*this->pop_chunk_()));
+    this->push_chunk(bitcoin_chunk(this->pop_slice_()));
     return error::op_success;
 }
 

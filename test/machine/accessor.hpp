@@ -152,6 +152,7 @@ public:
 
     // Primary stack (pop).
     using base::pop_chunk_;
+    using base::pop_slice_;
     using base::pop_strict_bool_;
     using base::pop_bool_;
     using base::pop_chunks;

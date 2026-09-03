@@ -257,6 +257,18 @@ BOOST_AUTO_TEST_CASE(program__drop___pushed__empty)
     BOOST_REQUIRE(machine->is_stack_empty());
 }
 
+BOOST_AUTO_TEST_CASE(program__pop_slice___borrowed_chunk__aliases_source)
+{
+    const data_chunk expected{ 0x01, 0x02, 0x03 };
+    machine_accessor<view_contiguous_stack> machine{ {}, flags::all_rules };
+    machine->push_variant(view_stack_variant{ data_slice{ expected } });
+
+    const auto actual = machine->pop_slice_();
+    BOOST_REQUIRE_EQUAL(actual, data_slice{ expected });
+    BOOST_REQUIRE_EQUAL(actual.data(), expected.data());
+    BOOST_REQUIRE(machine->is_stack_empty());
+}
+
 // equal_chunks
 
 BOOST_AUTO_TEST_CASE(program__equal_chunks__bool_and_integer__true)

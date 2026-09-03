@@ -109,6 +109,7 @@ protected:
 
     /// Primary stack (pop).
     virtual INLINE chunk_xptr pop_chunk_() NOEXCEPT;
+    virtual INLINE data_slice pop_slice_() NOEXCEPT;
     virtual INLINE bool pop_strict_bool_() NOEXCEPT;
     virtual INLINE bool pop_bool_(bool& value, bool minimal) NOEXCEPT;
     virtual INLINE bool pop_chunks(chunk_xptrs& data, size_t count) NOEXCEPT;
