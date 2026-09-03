@@ -74,6 +74,7 @@ public:
     virtual const data_chunk& pop() NOEXCEPT;
 
 protected:
+    using stack_value = typename stack<Stack>::variant;
     using flags = chain::flags;
     using opcode = chain::opcode;
     using operation = chain::operation;
@@ -82,8 +83,8 @@ protected:
     using op_iterator = chain::operations::const_iterator;
     using hash_cache = std::unordered_map<uint8_t, hash_digest>;
 
-    static INLINE bool equal_chunks(const stack_variant& left,
-        const stack_variant& right) NOEXCEPT;
+    static INLINE bool equal_chunks(const stack_value& left,
+        const stack_value& right) NOEXCEPT;
 
     /// Constants.
     /// -----------------------------------------------------------------------
@@ -126,13 +127,13 @@ protected:
     /// Primary stack (variant - index).
     virtual INLINE void swap_(size_t left_index, size_t right_index) NOEXCEPT;
     virtual INLINE void erase_(size_t index) NOEXCEPT;
-    virtual INLINE const stack_variant& peek_() const NOEXCEPT;
-    virtual INLINE const stack_variant& peek_(size_t index) const NOEXCEPT;
+    virtual INLINE const stack_value& peek_() const NOEXCEPT;
+    virtual INLINE const stack_value& peek_(size_t index) const NOEXCEPT;
 
     /// Primary stack (variant - top).
     virtual INLINE void drop_() NOEXCEPT;
-    virtual INLINE void push_variant(const stack_variant& vary) NOEXCEPT;
-    virtual INLINE stack_variant pop_() NOEXCEPT;
+    virtual INLINE void push_variant(const stack_value& vary) NOEXCEPT;
+    virtual INLINE stack_value pop_() NOEXCEPT;
 
     /// Primary stack state (untyped).
     virtual INLINE size_t stack_size() const NOEXCEPT;
@@ -143,8 +144,8 @@ protected:
     /// Alternate stack.
     /// -----------------------------------------------------------------------
     virtual INLINE bool is_alternate_empty() const NOEXCEPT;
-    virtual INLINE void push_alternate(stack_variant&& vary) NOEXCEPT;
-    virtual INLINE stack_variant pop_alternate_() NOEXCEPT;
+    virtual INLINE void push_alternate(stack_value&& vary) NOEXCEPT;
+    virtual INLINE stack_value pop_alternate_() NOEXCEPT;
 
     /// Conditional stack.
     /// -----------------------------------------------------------------------
@@ -220,6 +221,7 @@ private:
     using keys_array = std::array<ec_compressed, chain::multisig::maximum>;
     using sigs_array = std::array<ec_signature, chain::multisig::maximum>;
     using primary_stack = stack<Stack>;
+    using secondary_stack = std::vector<stack_value>;
     struct multisig_cache
     {
         bool set{};
@@ -278,7 +280,7 @@ private:
 
     // Stacks (primary_ is propagated).
     primary_stack primary_;
-    alternate_stack alternate_{};
+    secondary_stack alternate_{};
     condition_stack condition_{};
 
     // Accumulators.

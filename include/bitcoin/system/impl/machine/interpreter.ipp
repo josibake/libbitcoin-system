@@ -442,7 +442,7 @@ op_roll() NOEXCEPT
         return error::op_roll;
 
     // Copy variant because should be deleted before push (no stack alloc).
-    stack_variant temporary{ this->peek_(index) };
+    stack_value temporary{ this->peek_(index) };
 
     // Shifts maximum of n-1 references within vector of n.
     // [0,1,2,...,997,xxxx,999] => [0,1,2,...,997,999]

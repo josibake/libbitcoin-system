@@ -132,7 +132,7 @@ is_enabled(flags flag) const NOEXCEPT
 // static
 TEMPLATE
 INLINE bool CLASS::
-equal_chunks(const stack_variant& left, const stack_variant& right) NOEXCEPT
+equal_chunks(const stack_value& left, const stack_value& right) NOEXCEPT
 {
     return primary_stack::equal_chunks(left, right);
 }
@@ -412,7 +412,7 @@ erase_(size_t index) NOEXCEPT
 }
 
 TEMPLATE
-INLINE const stack_variant& CLASS::
+INLINE const typename CLASS::stack_value& CLASS::
 peek_(size_t index) const NOEXCEPT
 {
     return primary_.peek(index);
@@ -430,20 +430,20 @@ drop_() NOEXCEPT
 
 TEMPLATE
 INLINE void CLASS::
-push_variant(const stack_variant& vary) NOEXCEPT
+push_variant(const stack_value& vary) NOEXCEPT
 {
     primary_.push(vary);
 }
 
 TEMPLATE
-INLINE const stack_variant& CLASS::
+INLINE const typename CLASS::stack_value& CLASS::
 peek_() const NOEXCEPT
 {
     return primary_.top();
 }
 
 TEMPLATE
-INLINE stack_variant CLASS::
+INLINE typename CLASS::stack_value CLASS::
 pop_() NOEXCEPT
 {
     return primary_.pop();
@@ -500,23 +500,23 @@ is_alternate_empty() const NOEXCEPT
     return alternate_.empty();
 }
 
-// Moving a shared pointer to the alternate stack is optimal and acceptable.
+// Moving a stack value to the alternate stack is optimal and acceptable.
 BC_PUSH_WARNING(NO_RVALUE_REF_SHARED_PTR)
 TEMPLATE
 INLINE void CLASS::
-push_alternate(stack_variant&& vary) NOEXCEPT
+push_alternate(stack_value&& vary) NOEXCEPT
 BC_POP_WARNING()
 {
     alternate_.push_back(std::move(vary));
 }
 
 TEMPLATE
-INLINE stack_variant CLASS::
+INLINE typename CLASS::stack_value CLASS::
 pop_alternate_() NOEXCEPT
 {
     BC_ASSERT(!alternate_.empty());
 
-    stack_variant value{ std::move(alternate_.back()) };
+    stack_value value{ std::move(alternate_.back()) };
     alternate_.pop_back();
     return value;
 }

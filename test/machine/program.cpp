@@ -290,6 +290,20 @@ BOOST_AUTO_TEST_CASE(program__push_alternate__pop_alternate___expected)
     BOOST_REQUIRE(machine->is_alternate_empty());
 }
 
+BOOST_AUTO_TEST_CASE(program__alternate__borrowed_chunk__aliases_source)
+{
+    const data_chunk expected{ 0x42 };
+    const data_slice slice{ expected };
+    machine_accessor<view_contiguous_stack> machine{ {}, flags::all_rules };
+    machine->push_variant(view_stack_variant{ slice });
+
+    BOOST_REQUIRE_EQUAL(machine->op_to_alt_stack(), error::op_success);
+    const auto value = machine->pop_alternate_();
+    const auto actual = std::get<data_slice>(value);
+    BOOST_REQUIRE_EQUAL(actual, slice);
+    BOOST_REQUIRE_EQUAL(actual.data(), expected.data());
+}
+
 // conditional stack
 
 BOOST_AUTO_TEST_CASE(program__begin_if__negative__not_success)

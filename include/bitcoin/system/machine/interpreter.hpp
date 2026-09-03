@@ -62,6 +62,7 @@ protected:
     using opcode = chain::opcode;
     using operation = chain::operation;
     using op_error_t = error::op_error_t;
+    using stack_value = typename state::stack_value;
 
     /// Embedded script handler.
     static code connect_embedded(const chain::context& state,
