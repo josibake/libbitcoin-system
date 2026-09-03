@@ -161,6 +161,13 @@ peek_size() const NOEXCEPT
 // Primary stack (push).
 // ----------------------------------------------------------------------------
 
+TEMPLATE
+INLINE void CLASS::
+push_operation(const operation& op) NOEXCEPT
+{
+    push_chunk(op.data_ptr());
+}
+
 // This is the only source of push (write) tethering.
 TEMPLATE
 INLINE void CLASS::

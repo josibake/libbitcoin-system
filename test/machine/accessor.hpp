@@ -144,6 +144,7 @@ public:
         base::push_chunk(datum);
     }
 
+    using base::push_operation;
     using base::push_bool;
     using base::push_signed64;
     using base::push_length;

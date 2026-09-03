@@ -123,14 +123,13 @@ decode_signature(ec_signature& out, const data_slice& der_signature,
 // any one input script instance is not thread safe.
 TEMPLATE
 INLINE void CLASS::
-set_subscript(const op_iterator& op) NOEXCEPT
+set_subscript(size_t position) NOEXCEPT
 {
-    // Not possible unless op is not an element of script_.
-    BC_ASSERT(!script_->ops().empty() && op != script_->ops().end());
+    BC_ASSERT(position < script_->ops().size());
 
     // Advance the offset to the op following the found code separator.
     // This is non-const because changes script state (despite being mutable).
-    script_->offset = std::next(op);
+    script_->offset = std::next(script_->ops().begin(), add1(position));
 
     // The subscript is changed, so any cached signature hash is stale.
     uncache();

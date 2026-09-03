@@ -37,7 +37,7 @@ TEMPLATE
 error::op_error_t CLASS::
 op_unevaluated(opcode code) const NOEXCEPT
 {
-    return operation::is_invalid(code) ? error::op_invalid :
+    return chain::operation::is_invalid(code) ? error::op_invalid :
         error::op_reserved;
 }
 
@@ -70,7 +70,7 @@ op_push_size(const operation& op) NOEXCEPT
     if (op.is_underclaimed())
         return error::op_push_size;
 
-    this->push_chunk(op.data_ptr());
+    this->push_operation(op);
     return error::op_success;
 }
 
@@ -81,7 +81,7 @@ op_push_one_size(const operation& op) NOEXCEPT
     if (op.is_underclaimed())
         return error::op_push_one_size;
 
-    this->push_chunk(op.data_ptr());
+    this->push_operation(op);
     return error::op_success;
 }
 
@@ -92,7 +92,7 @@ op_push_two_size(const operation& op) NOEXCEPT
     if (op.is_underclaimed())
         return error::op_push_two_size;
 
-    this->push_chunk(op.data_ptr());
+    this->push_operation(op);
     return error::op_success;
 }
 
@@ -103,7 +103,7 @@ op_push_four_size(const operation& op) NOEXCEPT
     if (op.is_underclaimed())
         return error::op_push_four_size;
 
-    this->push_chunk(op.data_ptr());
+    this->push_operation(op);
     return error::op_success;
 }
 
@@ -976,10 +976,10 @@ op_hash256() NOEXCEPT
 
 TEMPLATE
 error::op_error_t CLASS::
-op_codeseparator(const op_iterator& op) NOEXCEPT
+op_codeseparator(size_t position) NOEXCEPT
 {
     // Not thread safe for the script (changes script object metadata).
-    this->set_subscript(op);
+    this->set_subscript(position);
     return error::op_success;
 }
 

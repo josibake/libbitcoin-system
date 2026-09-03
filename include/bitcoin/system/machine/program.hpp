@@ -100,6 +100,7 @@ protected:
     /// Underscored names reflect lack of guard against empty stack.
 
     /// Primary stack (push).
+    virtual INLINE void push_operation(const operation& op) NOEXCEPT;
     virtual INLINE void push_chunk(data_chunk&& datum) NOEXCEPT;
     virtual INLINE void push_chunk(const chunk_cptr& datum) NOEXCEPT;
     virtual INLINE void push_bool(bool value) NOEXCEPT;
@@ -180,8 +181,8 @@ protected:
     /// Signature subscripting.
     /// -----------------------------------------------------------------------
 
-    /// Set subscript position to next op.
-    virtual INLINE void set_subscript(const op_iterator& op) NOEXCEPT;
+    /// Set subscript position to the op after the given position.
+    virtual INLINE void set_subscript(size_t position) NOEXCEPT;
 
     /// Strip endorsement and op_codeseparator from returned subscript.
     virtual INLINE script::cptr subscript(

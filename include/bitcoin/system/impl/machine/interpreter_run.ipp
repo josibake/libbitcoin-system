@@ -39,7 +39,8 @@ run() NOEXCEPT
     if (const auto ec = state::initialize())
         return ec;
 
-    for (auto it = state::begin(); it != state::end(); ++it)
+    size_t position{};
+    for (auto it = state::begin(); it != state::end(); ++it, ++position)
     {
         const auto& op = *it;
 
@@ -51,7 +52,7 @@ run() NOEXCEPT
 
         if (state::if_(op))
         {
-            if (const auto ec = run_op(it))
+            if (const auto ec = run_op(op, position))
                 return ec;
 
             if (state::is_stack_overflow())
@@ -72,9 +73,9 @@ run() NOEXCEPT
 // protected
 TEMPLATE
 error::op_error_t CLASS::
-run_op(const op_iterator& op) NOEXCEPT
+run_op(const operation& op, size_t position) NOEXCEPT
 {
-    const auto code = op->code();
+    const auto code = op.code();
 
     switch (code)
     {
@@ -155,13 +156,13 @@ run_op(const op_iterator& op) NOEXCEPT
         case opcode::push_size_73:
         case opcode::push_size_74:
         case opcode::push_size_75:
-            return op_push_size(*op);
+            return op_push_size(op);
         case opcode::push_one_size:
-            return op_push_one_size(*op);
+            return op_push_one_size(op);
         case opcode::push_two_size:
-            return op_push_two_size(*op);
+            return op_push_two_size(op);
         case opcode::push_four_size:
-            return op_push_four_size(*op);
+            return op_push_four_size(op);
         case opcode::push_negative_1:
             return op_push_number(-1);
         case opcode::reserved_80:
@@ -347,7 +348,7 @@ run_op(const op_iterator& op) NOEXCEPT
         case opcode::hash256:
             return op_hash256();
         case opcode::codeseparator:
-            return op_codeseparator(op);
+            return op_codeseparator(position);
         case opcode::checksig:
             return op_check_sig();
         case opcode::checksigverify:

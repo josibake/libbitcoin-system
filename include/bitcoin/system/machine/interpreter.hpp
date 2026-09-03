@@ -60,7 +60,7 @@ public:
 protected:
     using flags = chain::flags;
     using opcode = chain::opcode;
-    using operation = chain::operation;
+    using operation = typename state::operation;
     using op_error_t = error::op_error_t;
     using stack_value = typename state::stack_value;
 
@@ -76,7 +76,7 @@ protected:
         const chain::signatures& capture) NOEXCEPT;
 
     /// Operation disatch.
-    virtual op_error_t run_op(const op_iterator& op) NOEXCEPT;
+    virtual op_error_t run_op(const operation& op, size_t position) NOEXCEPT;
 
     /// Operation handlers.
     virtual op_error_t op_unevaluated(opcode) const NOEXCEPT;
@@ -158,7 +158,7 @@ protected:
     virtual op_error_t op_sha256() NOEXCEPT;
     virtual op_error_t op_hash160() NOEXCEPT;
     virtual op_error_t op_hash256() NOEXCEPT;
-    virtual op_error_t op_codeseparator(const op_iterator& op) NOEXCEPT;
+    virtual op_error_t op_codeseparator(size_t position) NOEXCEPT;
     virtual op_error_t op_check_sig() NOEXCEPT;
     virtual op_error_t op_check_sig_verify() NOEXCEPT;
     virtual op_error_t op_check_multisig_verify() NOEXCEPT;
