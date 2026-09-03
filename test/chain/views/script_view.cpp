@@ -82,6 +82,8 @@ static void check_matches_script(const data_chunk& encoded)
             operation.is_underclaimed());
         BOOST_CHECK_EQUAL(actual->is_oversized(), operation.is_oversized());
         BOOST_CHECK_EQUAL(actual->is_underflow(), operation.is_underflow());
+        BOOST_CHECK_EQUAL(actual->is_conditional(),
+            operation.is_conditional());
 
         if (!actual->raw().empty())
             BOOST_CHECK_EQUAL(actual->raw().data(), encoded.data() + offset);

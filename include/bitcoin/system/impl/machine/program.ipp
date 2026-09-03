@@ -676,7 +676,7 @@ ops_increment(const operation& op) NOEXCEPT
     // Addition is safe due to script size constraint.
     BC_ASSERT(!is_add_overflow(operations_, one));
 
-    if (operation::is_counted(op.code()))
+    if (chain::operation::is_counted(op.code()))
         ++operations_;
 
     return operations_ <= chain::max_counted_ops;

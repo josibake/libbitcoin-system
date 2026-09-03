@@ -95,6 +95,11 @@ public:
         return underflow_;
     }
 
+    constexpr bool is_conditional() const NOEXCEPT
+    {
+        return operation::is_conditional(code_);
+    }
+
 private:
     opcode code_{ opcode::op_verif };
     data_slice data_{};
