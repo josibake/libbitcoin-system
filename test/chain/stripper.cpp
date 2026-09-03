@@ -38,6 +38,15 @@ BOOST_AUTO_TEST_CASE(stripper__constructor__push_data__nominal_opcode)
     BOOST_REQUIRE(instance.data_ptr() == ptr);
 }
 
+BOOST_AUTO_TEST_CASE(stripper__constructor__borrowed_data__retains_view)
+{
+    const auto data = base16_chunk("0102");
+    const stripper instance{ data_slice{ data } };
+    BOOST_REQUIRE(instance.code() == opcode::push_size_2);
+    BOOST_REQUIRE(instance.data_view() == data_slice{ data });
+    BOOST_REQUIRE(!instance.data_ptr());
+}
+
 BOOST_AUTO_TEST_CASE(stripper__operation_equality__same_value_distinct_data__true)
 {
     const auto data = base16_chunk("0102");

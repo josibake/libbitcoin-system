@@ -19,6 +19,10 @@
 #ifndef LIBBITCOIN_SYSTEM_MACHINE_INTERPRETER_IPP
 #define LIBBITCOIN_SYSTEM_MACHINE_INTERPRETER_IPP
 
+#include <array>
+#include <iterator>
+#include <span>
+#include <utility>
 #include <bitcoin/system/chain/chain.hpp>
 #include <bitcoin/system/chain/operation.hpp>
 #include <bitcoin/system/data/data.hpp>
@@ -1059,14 +1063,14 @@ op_check_sig_verify() NOEXCEPT
     }
 
     const auto key = this->pop_slice_();
-    const auto endorsement = this->pop_chunk_();
+    const auto endorsement = this->pop_slice_();
 
-    if (endorsement->empty())
+    if (endorsement.empty())
         return error::op_check_sig_verify2;
 
     // Split endorsement into DER signature and signature hash flags.
     uint8_t sighash_flags;
-    const auto der = this->ecdsa_split(sighash_flags, *endorsement);
+    const auto der = this->ecdsa_split(sighash_flags, endorsement);
     const auto bip66 = this->is_enabled(flags::bip66_rule);
 
     // BIP66: if DER encoding invalid script MUST fail and end.
@@ -1132,8 +1136,9 @@ op_check_multisig_verify() NOEXCEPT
     if (!this->ops_increment(count))
         return error::op_check_multisig_verify3;
 
-    chunk_xptrs keys;
-    if (!this->pop_chunks(keys, count))
+    std::array<data_slice, chain::max_multisig_public_keys> key_store{};
+    const auto keys = std::span{ key_store }.first(count);
+    if (!this->pop_slices(keys))
         return error::op_check_multisig_verify4;
 
     if (!this->pop_index32(count))
@@ -1142,8 +1147,9 @@ op_check_multisig_verify() NOEXCEPT
     if (count > keys.size())
         return error::op_check_multisig_verify6;
 
-    chunk_xptrs endorsements;
-    if (!this->pop_chunks(endorsements, count))
+    std::array<data_slice, chain::max_multisig_public_keys> endorsement_store{};
+    const auto endorsements = std::span{ endorsement_store }.first(count);
+    if (!this->pop_slices(endorsements))
         return error::op_check_multisig_verify7;
 
     if (this->is_stack_empty())
@@ -1174,12 +1180,12 @@ op_check_multisig_verify() NOEXCEPT
 
         // Empty endorsement does not increment iterator.
         const auto endorsement = *it;
-        if (endorsement->empty())
+        if (endorsement.empty())
             continue;
 
         // Split endorsement into DER signature and signature hash flags.
         uint8_t sighash_flags;
-        const auto der = this->ecdsa_split(sighash_flags, *endorsement);
+        const auto der = this->ecdsa_split(sighash_flags, endorsement);
 
         // BIP66: if DER encoding invalid script MUST fail and end.
         ec_signature sig;
@@ -1191,7 +1197,7 @@ op_check_multisig_verify() NOEXCEPT
             this->set_hash(endorsements, sighash_flags);
 
         // Verify ECDSA signature against public key and cache signature hash.
-        if (this->verify_ecdsa_signature(*key, this->cached_hash(), sig, false))
+        if (this->verify_ecdsa_signature(key, this->cached_hash(), sig, false))
             ++it;
     }
 

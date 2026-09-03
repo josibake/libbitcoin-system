@@ -20,6 +20,7 @@
 #define LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_SOURCE_HPP
 
 #include <iterator>
+#include <span>
 #include <bitcoin/system/chain/chain.hpp>
 #include <bitcoin/system/data/data.hpp>
 #include <bitcoin/system/define.hpp>
@@ -221,14 +222,15 @@ public:
         return generate(out, *script_, sighash_flags, active_flags);
     }
 
-    bool signature_hash(hash_digest& out, const chunk_xptr& endorsement,
+    bool signature_hash(hash_digest& out, const data_slice& endorsement,
         uint8_t sighash_flags, uint32_t active_flags) const NOEXCEPT
     {
         return generate(out, *subscript(endorsement, active_flags),
             sighash_flags, active_flags);
     }
 
-    bool signature_hash(hash_digest& out, const chunk_xptrs& endorsements,
+    bool signature_hash(hash_digest& out,
+        std::span<const data_slice> endorsements,
         uint8_t sighash_flags, uint32_t active_flags) const NOEXCEPT
     {
         return generate(out, *subscript(endorsements, active_flags),
@@ -294,7 +296,7 @@ private:
             version_, sighash_flags, active_flags);
     }
 
-    script_handle subscript(const chunk_xptr& endorsement,
+    script_handle subscript(const data_slice& endorsement,
         uint32_t active_flags) const NOEXCEPT
     {
         using namespace chain;
@@ -306,7 +308,7 @@ private:
             stripper{ opcode::codeseparator } });
     }
 
-    script_handle subscript(const chunk_xptrs& endorsements,
+    script_handle subscript(std::span<const data_slice> endorsements,
         uint32_t active_flags) const NOEXCEPT
     {
         using namespace chain;

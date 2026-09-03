@@ -19,6 +19,8 @@
 #ifndef LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_IPP
 #define LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_IPP
 
+#include <utility>
+#include <span>
 #include <bitcoin/system/chain/chain.hpp>
 #include <bitcoin/system/data/data.hpp>
 #include <bitcoin/system/define.hpp>
@@ -290,6 +292,19 @@ pop_chunks(chunk_xptrs& data, size_t count) NOEXCEPT
     data.reserve(count);
     for (size_t index = 0; index < count; ++index)
         data.push_back(pop_chunk_());
+
+    return true;
+}
+
+TEMPLATE
+INLINE bool CLASS::
+pop_slices(std::span<data_slice> data) NOEXCEPT
+{
+    if (stack_size() < data.size())
+        return false;
+
+    for (auto& value: data)
+        value = pop_slice_();
 
     return true;
 }

@@ -39,12 +39,19 @@ public:
     // ************************************************************************
     inline explicit stripper(const chunk_xptr& push_data) NOEXCEPT
       : code_(operation::nominal_opcode_from_data(*push_data)),
-        data_(push_data)
+        data_(push_data), view_(*push_data)
+    {
+    }
+
+    // The caller retains the referenced bytes for the duration of stripping.
+    inline explicit stripper(const data_slice& push_data) NOEXCEPT
+      : code_(operation::nominal_opcode_from_data(push_data)),
+        data_(), view_(push_data)
     {
     }
 
     inline explicit stripper(opcode code) NOEXCEPT
-      : code_(code), data_()
+      : code_(code), data_(), view_()
     {
     }
 
@@ -55,6 +62,7 @@ public:
 
     inline const data_chunk& data() const NOEXCEPT
     {
+        BC_ASSERT(data_);
         return *data_;
     }
 
@@ -63,15 +71,22 @@ public:
         return data_;
     }
 
+    inline const data_slice& data_view() const NOEXCEPT
+    {
+        return view_;
+    }
+
 private:
     opcode code_;
     chunk_xptr data_;
+    data_slice view_;
 };
 
 inline bool operator==(const operation& op, const stripper& strip) NOEXCEPT
 {
     // Endorsements should match by value but not pointer.
-    return op.code() == strip.code() && op.data() == strip.data();
+    return op.code() == strip.code() &&
+        data_slice{ op.data() } == strip.data_view();
 }
 
 typedef std::vector<stripper> strippers;

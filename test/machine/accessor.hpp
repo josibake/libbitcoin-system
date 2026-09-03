@@ -160,6 +160,7 @@ public:
     using base::pop_strict_bool_;
     using base::pop_bool_;
     using base::pop_chunks;
+    using base::pop_slices;
     using base::pop_signed32;
     using base::pop_signed32_;
     using base::pop_binary32;
@@ -236,6 +237,7 @@ public:
     bool hash_result{ true };
     bool ecdsa_result{ true };
     bool schnorr_result{ true };
+    mutable const uint8_t* hashed_endorsement{};
     mutable const uint8_t* verified_point{};
 
     // Number of leading ecdsa verifications to fail before ecdsa_result.
@@ -254,14 +256,15 @@ protected:
         return hash_result;
     }
 
-    bool signature_hash(hash_digest& out, const chunk_xptr&,
+    bool signature_hash(hash_digest& out, const data_slice& endorsement,
         uint8_t) const NOEXCEPT override
     {
+        hashed_endorsement = endorsement.data();
         out = one_hash;
         return hash_result;
     }
 
-    bool signature_hash(hash_digest& out, const chunk_xptrs&,
+    bool signature_hash(hash_digest& out, std::span<const data_slice>,
         uint8_t) const NOEXCEPT override
     {
         out = one_hash;
@@ -273,8 +276,11 @@ protected:
         return hash_result;
     }
 
-    void set_hash(const chunk_xptrs&, uint8_t) const NOEXCEPT override
+    void set_hash(std::span<const data_slice> endorsements,
+        uint8_t) const NOEXCEPT override
     {
+        if (!endorsements.empty())
+            hashed_endorsement = endorsements.front().data();
     }
 
     const hash_digest& cached_hash() const NOEXCEPT override
@@ -296,8 +302,8 @@ protected:
         return ecdsa_result;
     }
 
-    bool try_batch_multisig_verification(const chunk_xptrs&,
-        const chunk_xptrs&) const NOEXCEPT override
+    bool try_batch_multisig_verification(std::span<const data_slice>,
+        std::span<const data_slice>) const NOEXCEPT override
     {
         return false;
     }

@@ -20,6 +20,7 @@
 #define LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_HPP
 
 #include <atomic>
+#include <span>
 #include <unordered_map>
 #include <bitcoin/system/chain/chain.hpp>
 #include <bitcoin/system/crypto/crypto.hpp>
@@ -121,6 +122,7 @@ protected:
     virtual INLINE bool pop_strict_bool_() NOEXCEPT;
     virtual INLINE bool pop_bool_(bool& value, bool minimal) NOEXCEPT;
     virtual INLINE bool pop_chunks(chunk_xptrs& data, size_t count) NOEXCEPT;
+    virtual INLINE bool pop_slices(std::span<data_slice> data) NOEXCEPT;
     virtual INLINE bool pop_signed32(int32_t& value) NOEXCEPT;
     virtual INLINE bool pop_signed32_(int32_t& value) NOEXCEPT;
     virtual INLINE bool pop_binary32(int32_t& left, int32_t& right) NOEXCEPT;
@@ -198,9 +200,9 @@ protected:
     virtual INLINE bool signature_hash(hash_digest& out,
         uint8_t sighash_flags) const NOEXCEPT;
     virtual INLINE bool signature_hash(hash_digest& out,
-        const chunk_xptr& endorsement, uint8_t sighash_flags) const NOEXCEPT;
+        const data_slice& endorsement, uint8_t sighash_flags) const NOEXCEPT;
     virtual INLINE bool signature_hash(hash_digest& out,
-        const chunk_xptrs& endorsements,
+        std::span<const data_slice> endorsements,
         uint8_t sighash_flags) const NOEXCEPT;
 
     /// Multisig signature hash caching.
@@ -209,7 +211,7 @@ protected:
     virtual INLINE void uncache() const NOEXCEPT;
     virtual INLINE const hash_digest& cached_hash() const NOEXCEPT;
     virtual INLINE bool set_hash(uint8_t sighash_flags) const NOEXCEPT;
-    virtual INLINE void set_hash(const chunk_xptrs& endorsements,
+    virtual INLINE void set_hash(std::span<const data_slice> endorsements,
         uint8_t sighash_flags) const NOEXCEPT;
 
     /// Signature verify (with batching).
@@ -217,8 +219,9 @@ protected:
     virtual inline bool verify_ecdsa_signature(const data_slice& point,
         const hash_digest& hash, const ec_signature& signature,
         bool capture=true) const NOEXCEPT;
-    virtual inline bool try_batch_multisig_verification(const chunk_xptrs& points,
-        const chunk_xptrs& endorsements) const NOEXCEPT;
+    virtual inline bool try_batch_multisig_verification(
+        std::span<const data_slice> points,
+        std::span<const data_slice> endorsements) const NOEXCEPT;
     virtual inline bool verify_schnorr_signature(const data_slice& point,
         const hash_digest& hash, const ec_signature& signature) const NOEXCEPT;
 
@@ -241,12 +244,12 @@ private:
 
     // Batching helpers.
     inline bool parse_ecdsa_multisig(hash_digest& hash, keys_array& keys,
-        sigs_array& sigs, const chunk_xptrs& points,
-        const chunk_xptrs& endorsements) const NOEXCEPT;
+        sigs_array& sigs, std::span<const data_slice> points,
+        std::span<const data_slice> endorsements) const NOEXCEPT;
     inline bool parse_ecdsa_signatures(uint8_t& sighash, sigs_array& out,
-        const chunk_xptrs& endorsements, bool strict) const NOEXCEPT;
+        std::span<const data_slice> endorsements, bool strict) const NOEXCEPT;
     inline bool compress_public_keys(keys_array& out,
-        const chunk_xptrs& keys) const NOEXCEPT;
+        std::span<const data_slice> keys) const NOEXCEPT;
     inline bool to_compressed(ec_compressed& out,
         const data_slice& point) const NOEXCEPT;
     inline const ec_xonly& as_xonly(const data_slice& point) const NOEXCEPT;

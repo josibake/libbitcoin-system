@@ -2215,6 +2215,7 @@ BOOST_AUTO_TEST_CASE(interpreter__op_check_sig_verify__mocked_valid_signature__o
     machine->push_variant(view_stack_variant{ data_slice{ endorsement } });
     machine->push_variant(view_stack_variant{ data_slice{ key } });
     BOOST_REQUIRE_EQUAL(code{ machine->op_check_sig_verify() }, error::op_success);
+    BOOST_REQUIRE(machine->hashed_endorsement == endorsement.data());
     BOOST_REQUIRE(machine->verified_point == key.data());
     BOOST_REQUIRE(machine->is_stack_empty());
 }
@@ -2246,6 +2247,26 @@ BOOST_AUTO_TEST_CASE(interpreter__op_check_multisig__mocked_one_of_one__true_pus
     machine->push_chunk(data_chunk{ 0x02 });
     machine->push_signed64(1);
     BOOST_REQUIRE_EQUAL(code{ machine->op_check_multisig() }, error::op_success);
+    BOOST_REQUIRE_EQUAL(machine->stack_size(), 1u);
+    BOOST_REQUIRE(machine->peek_bool_());
+}
+
+BOOST_AUTO_TEST_CASE(interpreter__op_check_multisig__borrowed_one_of_one__true_pushed)
+{
+    using view_mocked = mock_program<view_contiguous_stack>;
+    machine_accessor<view_contiguous_stack, view_mocked> machine{
+        {}, flags::all_rules };
+    const data_chunk dummy{};
+    const data_chunk endorsement{ 0x30, 0x01 };
+    const data_chunk key{ 0x02 };
+    machine->push_variant(view_stack_variant{ data_slice{ dummy } });
+    machine->push_variant(view_stack_variant{ data_slice{ endorsement } });
+    machine->push_signed64(1);
+    machine->push_variant(view_stack_variant{ data_slice{ key } });
+    machine->push_signed64(1);
+    BOOST_REQUIRE_EQUAL(code{ machine->op_check_multisig() }, error::op_success);
+    BOOST_REQUIRE(machine->hashed_endorsement == endorsement.data());
+    BOOST_REQUIRE(machine->verified_point == key.data());
     BOOST_REQUIRE_EQUAL(machine->stack_size(), 1u);
     BOOST_REQUIRE(machine->peek_bool_());
 }

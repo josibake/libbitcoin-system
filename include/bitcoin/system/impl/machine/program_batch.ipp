@@ -20,6 +20,7 @@
 #define LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_BATCH_IPP
 
 #include <optional>
+#include <span>
 #include <bitcoin/system/chain/chain.hpp>
 #include <bitcoin/system/crypto/crypto.hpp>
 #include <bitcoin/system/data/data.hpp>
@@ -76,8 +77,8 @@ verify_ecdsa_signature(const data_slice& point, const hash_digest& hash,
 
 TEMPLATE
 inline bool CLASS::
-try_batch_multisig_verification(const chunk_xptrs& points,
-    const chunk_xptrs& endorsements) const NOEXCEPT
+try_batch_multisig_verification(std::span<const data_slice> points,
+    std::span<const data_slice> endorsements) const NOEXCEPT
 {
     using namespace chain;
     if (!capture_.enabled)
@@ -186,8 +187,8 @@ is_threshold_batchable() const NOEXCEPT
 TEMPLATE
 inline bool CLASS::
 parse_ecdsa_multisig(hash_digest& hash, keys_array& keys,
-    sigs_array& sigs, const chunk_xptrs& points,
-    const chunk_xptrs& endorsements) const NOEXCEPT
+    sigs_array& sigs, std::span<const data_slice> points,
+    std::span<const data_slice> endorsements) const NOEXCEPT
 {
     uint8_t sighash;
     const auto bip66 = is_enabled(flags::bip66_rule);
@@ -200,7 +201,7 @@ parse_ecdsa_multisig(hash_digest& hash, keys_array& keys,
 TEMPLATE
 inline bool CLASS::
 parse_ecdsa_signatures(uint8_t& sighash, sigs_array& out,
-    const chunk_xptrs& endorsements, bool strict) const NOEXCEPT
+    std::span<const data_slice> endorsements, bool strict) const NOEXCEPT
 {
     BC_ASSERT(endorsements.size() <= out.size());
     std::optional<uint8_t> byte{};
@@ -209,17 +210,17 @@ parse_ecdsa_signatures(uint8_t& sighash, sigs_array& out,
     for (const auto& sig: endorsements)
     {
         // Don't capture ecdsa multisig with empty sigs.
-        if (sig->empty())
+        if (sig.empty())
             return false;
 
         // Enforce uniform sighash byte (single digest per group).
         if (!byte.has_value())
-            byte = sig->back();
-        else if (byte != sig->back())
+            byte = sig.back();
+        else if (byte != sig.back())
             return false;
 
-        const auto end = std::prev(sig->end());
-        if (!decode_signature(*it++, { sig->begin(), end }, strict))
+        const auto end = std::prev(sig.end());
+        if (!decode_signature(*it++, { sig.begin(), end }, strict))
             return false;
     }
 
@@ -234,13 +235,13 @@ parse_ecdsa_signatures(uint8_t& sighash, sigs_array& out,
 TEMPLATE
 inline bool CLASS::
 compress_public_keys(keys_array& out,
-    const chunk_xptrs& keys) const NOEXCEPT
+    std::span<const data_slice> keys) const NOEXCEPT
 {
     BC_ASSERT(keys.size() <= out.size());
     auto it = out.begin();
 
     for (const auto& key: keys)
-        if (!to_compressed(*it++, *key))
+        if (!to_compressed(*it++, key))
             return false;
 
     return true;

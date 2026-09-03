@@ -19,6 +19,8 @@
 #ifndef LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_VERIFY_IPP
 #define LIBBITCOIN_SYSTEM_MACHINE_PROGRAM_VERIFY_IPP
 
+#include <iterator>
+#include <span>
 #include <bitcoin/system/chain/chain.hpp>
 #include <bitcoin/system/crypto/crypto.hpp>
 #include <bitcoin/system/data/data.hpp>
@@ -140,7 +142,7 @@ signature_hash(hash_digest& out, uint8_t sighash_flags) const NOEXCEPT
 
 TEMPLATE
 INLINE bool CLASS::
-signature_hash(hash_digest& out, const chunk_xptr& endorsement,
+signature_hash(hash_digest& out, const data_slice& endorsement,
     uint8_t sighash_flags) const NOEXCEPT
 {
     return source_.signature_hash(out, endorsement, sighash_flags, flags_);
@@ -148,7 +150,7 @@ signature_hash(hash_digest& out, const chunk_xptr& endorsement,
 
 TEMPLATE
 INLINE bool CLASS::
-signature_hash(hash_digest& out, const chunk_xptrs& endorsements,
+signature_hash(hash_digest& out, std::span<const data_slice> endorsements,
     uint8_t sighash_flags) const NOEXCEPT
 {
     return source_.signature_hash(out, endorsements, sighash_flags, flags_);
@@ -188,7 +190,8 @@ set_hash(uint8_t sighash_flags) const NOEXCEPT
 
 TEMPLATE
 INLINE void CLASS::
-set_hash(const chunk_xptrs& endorsements, uint8_t sighash_flags) const NOEXCEPT
+set_hash(std::span<const data_slice> endorsements,
+    uint8_t sighash_flags) const NOEXCEPT
 {
     // Only v1 (unsubscripted) sighash can fail, so void return here.
     signature_hash(multisig_.hash, endorsements,
