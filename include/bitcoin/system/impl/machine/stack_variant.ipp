@@ -20,6 +20,8 @@
 #define LIBBITCOIN_SYSTEM_MACHINE_STACK_VARIANT_IPP
 
 #include <tuple>
+#include <type_traits>
+#include <utility>
 #include <bitcoin/system/data/data.hpp>
 #include <bitcoin/system/define.hpp>
 #include <bitcoin/system/math/math.hpp>
@@ -27,6 +29,36 @@
 namespace libbitcoin {
 namespace system {
 namespace machine {
+
+inline data_slice slice_of(const chunk_xptr& value) NOEXCEPT
+{
+    return { *value };
+}
+
+template <typename Value>
+inline data_slice slice_of(const Value& value, data_chunk& temporary) NOEXCEPT
+{
+    using value_type = std::remove_cvref_t<Value>;
+
+    if constexpr (is_same_type<value_type, bool>)
+    {
+        temporary = number::chunk::from_bool(value);
+        return { temporary };
+    }
+    else if constexpr (is_same_type<value_type, int64_t>)
+    {
+        temporary = number::chunk::from_integer(value);
+        return { temporary };
+    }
+    else if constexpr (is_same_type<value_type, chunk_xptr>)
+    {
+        return slice_of(value);
+    }
+    else
+    {
+        return value;
+    }
+}
 
 // private
 // Generalized integer peek for varying bit widths up to 8 bytes.
@@ -58,6 +90,10 @@ peek_signed(Integer& value) const NOEXCEPT
         {
             // This is never executed in standard scripts.
             result = integer<Bytes>::from_chunk(value, *vary);
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            result = integer<Bytes>::from_chunk(value, vary);
         }
     }, top());
 
@@ -92,6 +128,10 @@ peek_bool() const NOEXCEPT
         {
             // This is never executed in standard scripts.
             value = boolean::from_chunk(*vary);
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            value = boolean::from_chunk(vary);
         }
     }, top());
 
@@ -122,6 +162,10 @@ peek_strict_bool() const NOEXCEPT
         {
             // This may be executed in standard scripts (without bip147).
             value = boolean::from_chunk_strict(*vary);
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            value = boolean::from_chunk_strict(vary);
         }
     }, top());
 
@@ -153,6 +197,10 @@ peek_minimal_bool(bool& value) const NOEXCEPT
         {
             // This may be executed in tapscripts.
             result = boolean::from_chunk(value, *vary);
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            result = boolean::from_chunk(value, vary);
         }
     }, top());
 
@@ -183,6 +231,10 @@ peek_size() const NOEXCEPT
         {
             // This is never executed in standard scripts.
             value = vary->size();
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            value = vary.size();
         }
     }, top());
 
@@ -228,6 +280,41 @@ peek_chunk() const NOEXCEPT
         {
             // This is the canonical use case.
             value = vary;
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            value = make_external(vary.to_chunk(), tether_);
+        }
+    }, top());
+
+    return value;
+}
+
+// This avoids allocation when the stack element already refers to bytes.
+TEMPLATE
+data_slice CLASS::
+peek_slice() const NOEXCEPT
+{
+    using namespace number;
+    data_slice value{};
+
+    std::visit(overload
+    {
+        [&](bool vary) NOEXCEPT
+        {
+            value = slice_of(make_external(chunk::from_bool(vary), tether_));
+        },
+        [&](int64_t vary) NOEXCEPT
+        {
+            value = slice_of(make_external(chunk::from_integer(vary), tether_));
+        },
+        [&](const chunk_xptr& vary) NOEXCEPT
+        {
+            value = slice_of(vary);
+        },
+        [&](const data_slice& vary) NOEXCEPT
+        {
+            value = vary;
         }
     }, top());
 
@@ -258,6 +345,11 @@ peek_nonempty() const NOEXCEPT
             {
                 if (vary && !vary->empty())
                     ++count;
+            },
+            [&](const data_slice& vary) NOEXCEPT
+            {
+                if (!vary.empty())
+                    ++count;
             }
         }, element);
     }
@@ -273,66 +365,24 @@ peek_nonempty() const NOEXCEPT
 // Integers are unconstrained as these are stack chunk equality comparisons.
 TEMPLATE
 bool CLASS::
-equal_chunks(const stack_variant& left, const stack_variant& right) NOEXCEPT
+equal_chunks(const variant& left, const variant& right) NOEXCEPT
 {
-    using namespace number;
-    auto same{ true };
+    data_chunk left_store{};
+    data_chunk right_store{};
+    data_slice left_slice{};
+    data_slice right_slice{};
 
-    std::visit(overload
+    std::visit([&](const auto& value) NOEXCEPT
     {
-        // This is never executed in standard scripts.
-        [&](bool vary) NOEXCEPT
-        {
-            switch (right.index())
-            {
-                case stack_type::bool_:
-                    same = std::get<bool>(right) == vary;
-                    break;
-                case stack_type::int64_:
-                    same = std::get<int64_t>(right) == to_int(vary);
-                    break;
-                case stack_type::pchunk_:
-                    same = *std::get<chunk_xptr>(right) == chunk::from_bool(vary);
-            }
-        },
-
-        // This is never executed in standard scripts.
-        [&](int64_t vary) NOEXCEPT
-        {
-            switch (right.index())
-            {
-                case stack_type::bool_:
-                    same = to_int(std::get<bool>(right)) == vary;
-                    break;
-                case stack_type::int64_:
-                    same = std::get<int64_t>(right) == vary;
-                    break;
-                case stack_type::pchunk_:
-                    same = *std::get<chunk_xptr>(right) == chunk::from_integer(vary);
-            }
-        },
-
-        // This is the canonical use case.
-        [&](chunk_xptr vary) NOEXCEPT
-        {
-            switch (right.index())
-            {
-                case stack_type::bool_:
-                    // This is never executed in standard scripts.
-                    same = chunk::from_bool(std::get<bool>(right)) == *vary;
-                    break;
-                case stack_type::int64_:
-                    // This is never executed in standard scripts.
-                    same = chunk::from_integer(std::get<int64_t>(right)) == *vary;
-                    break;
-                case stack_type::pchunk_:
-                    // This is the canonical use case.
-                    same = *std::get<chunk_xptr>(right) == *vary;
-            }
-        }
+        left_slice = slice_of(value, left_store);
     }, left);
 
-    return same;
+    std::visit([&](const auto& value) NOEXCEPT
+    {
+        right_slice = slice_of(value, right_store);
+    }, right);
+
+    return left_slice == right_slice;
 }
 
 } // namespace machine
@@ -340,4 +390,3 @@ equal_chunks(const stack_variant& left, const stack_variant& right) NOEXCEPT
 } // namespace libbitcoin
 
 #endif
-

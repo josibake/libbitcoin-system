@@ -45,7 +45,7 @@ stack(Container&& container) NOEXCEPT
 // ----------------------------------------------------------------------------
 
 TEMPLATE
-INLINE const stack_variant& CLASS::
+INLINE const typename CLASS::variant& CLASS::
 top() const NOEXCEPT
 {
     BC_ASSERT(!empty());
@@ -53,11 +53,11 @@ top() const NOEXCEPT
 }
 
 TEMPLATE
-INLINE stack_variant CLASS::
+INLINE typename CLASS::variant CLASS::
 pop() NOEXCEPT
 {
     BC_ASSERT(!empty());
-    stack_variant temporary{ std::move(container_.back()) };
+    variant temporary{ std::move(container_.back()) };
     container_.pop_back();
     return temporary;
 }
@@ -98,19 +98,20 @@ push(data_chunk&& value) NOEXCEPT
     // op_hash160           (1)
     // op_hash256           (1)
 
-    container_.push_back(make_external(std::move(value), tether_));
+    container_.emplace_back(std::in_place_type<chunk_xptr>,
+        make_external(std::move(value), tether_));
 }
 
 TEMPLATE
 INLINE void CLASS::
-push(stack_variant&& value) NOEXCEPT
+push(variant&& value) NOEXCEPT
 {
     container_.push_back(std::move(value));
 }
 
 TEMPLATE
 INLINE void CLASS::
-push(const stack_variant& value) NOEXCEPT
+push(const variant& value) NOEXCEPT
 {
     container_.push_back(value);
 }
@@ -133,7 +134,18 @@ TEMPLATE
 INLINE void CLASS::
 emplace_chunk(const chunk_xptr& value) NOEXCEPT
 {
-    container_.emplace_back(value.get());
+    container_.emplace_back(std::in_place_type<chunk_xptr>, value.get());
+}
+
+TEMPLATE
+INLINE void CLASS::
+emplace_chunk(const data_slice& value) NOEXCEPT
+{
+    if constexpr (is_same_type<variant, view_stack_variant>)
+        container_.emplace_back(std::in_place_type<data_slice>, value);
+    else
+        container_.emplace_back(std::in_place_type<chunk_xptr>,
+            make_external(value.to_chunk(), tether_));
 }
 
 // Positional (stack cheats).
@@ -172,7 +184,7 @@ swap(size_t left_index, size_t right_index) NOEXCEPT
 }
 
 TEMPLATE
-INLINE const stack_variant& CLASS::
+INLINE const typename CLASS::variant& CLASS::
 peek(size_t index) const NOEXCEPT
 {
     BC_ASSERT(index < size());

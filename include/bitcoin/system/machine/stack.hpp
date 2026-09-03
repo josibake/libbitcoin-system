@@ -31,12 +31,15 @@ namespace system {
 namespace machine {
 
 /// Primary and alternate stacks have variant elements.
-enum stack_type{ bool_, int64_, pchunk_ };
+enum stack_type{ bool_, int64_, pchunk_, slice_ };
 typedef std::variant<bool, int64_t, chunk_xptr> stack_variant;
+typedef std::variant<bool, int64_t, chunk_xptr, data_slice> view_stack_variant;
 
 /// Primary stack options.
 typedef std::list<stack_variant> linked_stack;
 typedef std::vector<stack_variant> contiguous_stack;
+typedef std::list<view_stack_variant> view_linked_stack;
+typedef std::vector<view_stack_variant> view_contiguous_stack;
 
 /// Alternate stack requires no stack<T> abstraction.
 typedef std::vector<stack_variant> alternate_stack;
@@ -49,6 +52,8 @@ template <typename Container>
 class stack
 {
 public:
+    using variant = typename Container::value_type;
+
     /// Stack is copied in program construct.
     DEFAULT_COPY_MOVE_DESTRUCT(stack);
 
@@ -57,22 +62,23 @@ public:
     INLINE stack(Container&& container) NOEXCEPT;
 
     /// Pure stack abstraction.
-    virtual INLINE const stack_variant& top() const NOEXCEPT;
-    virtual INLINE stack_variant pop() NOEXCEPT;
+    virtual INLINE const variant& top() const NOEXCEPT;
+    virtual INLINE variant pop() NOEXCEPT;
     virtual INLINE void drop() NOEXCEPT;
     virtual INLINE bool empty() const NOEXCEPT;
     virtual INLINE size_t size() const NOEXCEPT;
     virtual INLINE void push(data_chunk&& value) NOEXCEPT;
-    virtual INLINE void push(stack_variant&& value) NOEXCEPT;
-    virtual INLINE void push(const stack_variant& value) NOEXCEPT;
+    virtual INLINE void push(variant&& value) NOEXCEPT;
+    virtual INLINE void push(const variant& value) NOEXCEPT;
     virtual INLINE void emplace_boolean(bool value) NOEXCEPT;
     virtual INLINE void emplace_integer(int64_t value) NOEXCEPT;
     virtual INLINE void emplace_chunk(const chunk_xptr& value) NOEXCEPT;
+    virtual INLINE void emplace_chunk(const data_slice& value) NOEXCEPT;
 
     /// Positional (stack cheats).
     virtual INLINE void erase(size_t index) NOEXCEPT;
     virtual INLINE void swap(size_t left_index, size_t right_index) NOEXCEPT;
-    virtual INLINE const stack_variant& peek(size_t index) const NOEXCEPT;
+    virtual INLINE const variant& peek(size_t index) const NOEXCEPT;
     virtual INLINE bool peek_signed4(int32_t& value) const NOEXCEPT;
     virtual INLINE bool peek_signed5(int64_t& value) const NOEXCEPT;
 
@@ -84,8 +90,9 @@ public:
     virtual size_t peek_size() const NOEXCEPT;
     virtual size_t peek_nonempty() const NOEXCEPT;
     virtual chunk_xptr peek_chunk() const NOEXCEPT;
-    static bool equal_chunks(const stack_variant& left,
-        const stack_variant& right) NOEXCEPT;
+    virtual data_slice peek_slice() const NOEXCEPT;
+    static bool equal_chunks(const variant& left,
+        const variant& right) NOEXCEPT;
 
 private:
     template<size_t Bytes, typename Integer,
@@ -93,8 +100,10 @@ private:
         if_signed_integral_integer<Integer> = true>
     bool peek_signed(Integer& value) const NOEXCEPT;
 
-    static constexpr auto linked_ = is_same_type<Container, linked_stack>;
-    static constexpr auto vector_ = is_same_type<Container, contiguous_stack>;
+    static constexpr auto linked_ = is_same_type<Container, linked_stack> ||
+        is_same_type<Container, view_linked_stack>;
+    static constexpr auto vector_ = is_same_type<Container, contiguous_stack> ||
+        is_same_type<Container, view_contiguous_stack>;
     static_assert(linked_ || vector_, "unsupported stack container");
 
     Container container_;

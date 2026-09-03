@@ -21,9 +21,11 @@
 using namespace system::machine;
 
 static_assert(std::variant_size<stack_variant>::value == 3u);
+static_assert(std::variant_size<view_stack_variant>::value == 4u);
 static_assert(is_same_type<std::variant_alternative_t<stack_type::bool_, stack_variant>, bool>);
 static_assert(is_same_type<std::variant_alternative_t<stack_type::int64_, stack_variant>, int64_t>);
 static_assert(is_same_type<std::variant_alternative_t<stack_type::pchunk_, stack_variant>, chunk_xptr>);
+static_assert(is_same_type<std::variant_alternative_t<stack_type::slice_, view_stack_variant>, data_slice>);
 
 BOOST_AUTO_TEST_SUITE(stack_tests)
 
@@ -167,6 +169,17 @@ BOOST_AUTO_TEST_CASE(stack__emplace_chunk__linked__expected)
     stack<linked_stack> instance{};
     instance.emplace_chunk(ptr);
     BOOST_REQUIRE(instance.pop() == stack_variant{ ptr });
+}
+
+BOOST_AUTO_TEST_CASE(stack__emplace_chunk__slice__aliases_source)
+{
+    const data_chunk expected{ 0x2a, 0x2b };
+    const data_slice slice{ expected };
+    stack<view_contiguous_stack> instance{};
+    instance.emplace_chunk(slice);
+    const auto actual = std::get<data_slice>(instance.pop());
+    BOOST_REQUIRE_EQUAL(actual, slice);
+    BOOST_REQUIRE_EQUAL(actual.data(), expected.data());
 }
 
 // positional
@@ -315,6 +328,17 @@ BOOST_AUTO_TEST_CASE(stack__peek_signed5__linked_six_byte_value__false)
     BOOST_REQUIRE(!instance.peek_signed5(value));
 }
 
+BOOST_AUTO_TEST_CASE(stack__peek_signed4__borrowed_chunk__expected)
+{
+    const data_chunk expected{ 0x00, 0x01 };
+    stack<view_contiguous_stack> instance{};
+    instance.emplace_chunk(data_slice{ expected });
+
+    int32_t value{};
+    BOOST_REQUIRE(instance.peek_signed4(value));
+    BOOST_REQUIRE_EQUAL(value, 0x0100);
+}
+
 // variant conversions
 
 BOOST_AUTO_TEST_CASE(stack__peek_bool__contiguous_types__expected)
@@ -371,6 +395,21 @@ BOOST_AUTO_TEST_CASE(stack__peek_minimal_bool__linked_minimal_true__true)
     stack<linked_stack> instance{};
     instance.push(data_chunk{ 0x01 });
 
+    bool value{};
+    BOOST_REQUIRE(instance.peek_minimal_bool(value));
+    BOOST_REQUIRE(value);
+}
+
+BOOST_AUTO_TEST_CASE(stack__boolean_queries__borrowed_chunks__expected)
+{
+    const data_chunk negative_zero{ 0x80 };
+    const data_chunk minimal_true{ 0x01 };
+    stack<view_contiguous_stack> instance{};
+    instance.emplace_chunk(data_slice{ negative_zero });
+    BOOST_REQUIRE(!instance.peek_bool());
+    BOOST_REQUIRE(instance.peek_strict_bool());
+
+    instance.emplace_chunk(data_slice{ minimal_true });
     bool value{};
     BOOST_REQUIRE(instance.peek_minimal_bool(value));
     BOOST_REQUIRE(value);
@@ -436,6 +475,21 @@ BOOST_AUTO_TEST_CASE(stack__peek_chunk__linked_integer__converted)
     BOOST_REQUIRE_EQUAL(*instance.peek_chunk(), base16_chunk("0001"));
 }
 
+BOOST_AUTO_TEST_CASE(stack__peek_slice__borrowed_and_external__aliases_sources)
+{
+    const data_chunk borrowed{ 0x01, 0x02 };
+    const data_chunk external{ 0x03, 0x04 };
+    const chunk_xptr pointer{ external };
+    stack<view_contiguous_stack> instance{};
+
+    instance.emplace_chunk(data_slice{ borrowed });
+    BOOST_REQUIRE_EQUAL(instance.peek_slice().data(), borrowed.data());
+
+    instance.drop();
+    instance.emplace_chunk(pointer);
+    BOOST_REQUIRE_EQUAL(instance.peek_slice().data(), external.data());
+}
+
 // equal_chunks
 
 BOOST_AUTO_TEST_CASE(stack__equal_chunks__bool_and_integer_one__true)
@@ -457,6 +511,23 @@ BOOST_AUTO_TEST_CASE(stack__equal_chunks__unequal_integers__false)
     const stack_variant left{ int64_t{ 1 } };
     const stack_variant right{ int64_t{ 2 } };
     BOOST_REQUIRE(!stack<contiguous_stack>::equal_chunks(left, right));
+}
+
+BOOST_AUTO_TEST_CASE(stack__equal_chunks__borrowed_and_external__symmetric)
+{
+    const data_chunk expected{ 0x01, 0x02 };
+    const data_slice slice{ expected };
+    const chunk_xptr pointer{ expected };
+    const view_stack_variant borrowed{ slice };
+    const view_stack_variant external{ pointer };
+    const view_stack_variant boolean{ true };
+
+    BOOST_REQUIRE(stack<view_contiguous_stack>::equal_chunks(
+        borrowed, external));
+    BOOST_REQUIRE(stack<view_contiguous_stack>::equal_chunks(
+        external, borrowed));
+    BOOST_REQUIRE(!stack<view_contiguous_stack>::equal_chunks(
+        borrowed, boolean));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
