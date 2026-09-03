@@ -432,6 +432,7 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\views\block_view.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\views\script_view.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\views\transaction_view.hpp" />
+    <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\views\witness_view.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\witness.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\config\authority.hpp" />
     <ClInclude Include="..\..\..\..\include\bitcoin\system\config\base16.hpp" />

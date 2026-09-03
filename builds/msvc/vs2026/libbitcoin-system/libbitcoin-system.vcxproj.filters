@@ -950,6 +950,9 @@
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\views\transaction_view.hpp">
       <Filter>include\bitcoin\system\chain\views</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\views\witness_view.hpp">
+      <Filter>include\bitcoin\system\chain\views</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\include\bitcoin\system\chain\witness.hpp">
       <Filter>include\bitcoin\system\chain</Filter>
     </ClInclude>

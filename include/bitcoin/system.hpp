@@ -85,6 +85,7 @@
 #include <bitcoin/system/chain/views/block_view.hpp>
 #include <bitcoin/system/chain/views/script_view.hpp>
 #include <bitcoin/system/chain/views/transaction_view.hpp>
+#include <bitcoin/system/chain/views/witness_view.hpp>
 #include <bitcoin/system/config/authority.hpp>
 #include <bitcoin/system/config/base16.hpp>
 #include <bitcoin/system/config/base2.hpp>

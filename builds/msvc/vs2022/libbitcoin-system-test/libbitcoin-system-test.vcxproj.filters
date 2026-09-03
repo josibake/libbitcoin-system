@@ -246,6 +246,9 @@
     <ClCompile Include="..\..\..\..\test\chain\views\transaction_view.cpp">
       <Filter>src\chain\views</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\test\chain\views\witness_view.cpp">
+      <Filter>src\chain\views</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\test\chain\witness.cpp">
       <Filter>src\chain</Filter>
     </ClCompile>

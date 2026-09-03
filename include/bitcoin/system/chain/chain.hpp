@@ -44,6 +44,7 @@
 #include <bitcoin/system/chain/views/block_view.hpp>
 #include <bitcoin/system/chain/views/script_view.hpp>
 #include <bitcoin/system/chain/views/transaction_view.hpp>
+#include <bitcoin/system/chain/views/witness_view.hpp>
 #include <bitcoin/system/chain/witness.hpp>
 
 // Byte copy cost is computed as ceilinged divide of total member bits by 8 (128 bits per shared_ptr).

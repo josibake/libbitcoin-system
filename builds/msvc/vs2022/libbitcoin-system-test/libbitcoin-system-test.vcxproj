@@ -204,6 +204,7 @@
     <ClCompile Include="..\..\..\..\test\chain\views\block_view.cpp" />
     <ClCompile Include="..\..\..\..\test\chain\views\script_view.cpp" />
     <ClCompile Include="..\..\..\..\test\chain\views\transaction_view.cpp" />
+    <ClCompile Include="..\..\..\..\test\chain\views\witness_view.cpp" />
     <ClCompile Include="..\..\..\..\test\chain\witness.cpp">
       <ObjectFileName>$(IntDir)test_chain_witness.obj</ObjectFileName>
     </ClCompile>
