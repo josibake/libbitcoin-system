@@ -242,6 +242,8 @@ BC_API bool sign(ec_signature& out, const ec_secret& secret,
     const hash_digest& hash) NOEXCEPT;
 
 /// Verify ECDSA signature of hash by associated secret of the point.
+BC_API bool verify_signature(const data_slice& point,
+    const hash_digest& hash, const ec_signature& signature) NOEXCEPT;
 BC_API bool verify_signature(const data_chunk& point,
     const hash_digest& hash, const ec_signature& signature) NOEXCEPT;
 BC_API bool verify_signature(const ec_compressed& compressed,
@@ -260,6 +262,8 @@ BC_API bool sign(ec_signature& out, const ec_secret& secret,
     const hash_digest& hash, const hash_digest& auxiliary) NOEXCEPT;
 
 /// Verify Schnorr signature of hash by associated secret of the x-only point.
+BC_API bool verify_signature(const data_slice& x_point,
+    const hash_digest& hash, const ec_signature& signature) NOEXCEPT;
 BC_API bool verify_signature(const data_chunk& x_point,
     const hash_digest& hash, const ec_signature& signature) NOEXCEPT;
 BC_API bool verify_signature(const ec_xonly& x_point,

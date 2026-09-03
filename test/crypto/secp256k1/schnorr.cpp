@@ -20,4 +20,22 @@
 
 BOOST_AUTO_TEST_SUITE(secp256k1_tests)
 
+BOOST_AUTO_TEST_CASE(secp256k1__schnorr_verify__slice__expected)
+{
+    using namespace system::schnorr;
+
+    constexpr ec_secret secret = base16_array(
+        "0000000000000000000000000000000000000000000000000000000000000003");
+    constexpr hash_digest message{};
+    constexpr hash_digest auxiliary{};
+
+    ec_compressed point{};
+    ec_signature signature{};
+    BOOST_REQUIRE(secret_to_public(point, secret));
+    BOOST_REQUIRE(sign(signature, secret, message, auxiliary));
+
+    const data_slice x_point{ std::next(point.begin()), point.end() };
+    BOOST_REQUIRE(verify_signature(x_point, message, signature));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

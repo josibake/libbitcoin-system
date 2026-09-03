@@ -80,6 +80,7 @@ BOOST_AUTO_TEST_CASE(secp256k1__sign__round_trip_positive__expected)
     ec_signature signature;
     BOOST_REQUIRE(sign(signature, secret1, hash));
     BOOST_REQUIRE(verify_signature(point, hash, signature));
+    BOOST_REQUIRE(verify_signature(data_slice{ point }, hash, signature));
 }
 
 BOOST_AUTO_TEST_CASE(secp256k1__sign__round_trip_negative__expected)

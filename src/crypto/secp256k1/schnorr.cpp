@@ -51,7 +51,7 @@ bool sign(ec_signature& out, const ec_secret& secret,
 }
 
 // BIP341: A Taproot signature is a 64-byte Schnorr sig, as defined in BIP340.
-bool verify_signature(const data_chunk& x_point, const hash_digest& hash,
+bool verify_signature(const data_slice& x_point, const hash_digest& hash,
     const ec_signature& signature) NOEXCEPT
 {
     constexpr auto size = ec_xonly_size;
@@ -60,6 +60,12 @@ bool verify_signature(const data_chunk& x_point, const hash_digest& hash,
 
     const auto& public_key = unsafe_array_cast<uint8_t, size>(x_point.data());
     return verify_signature(public_key, hash, signature);
+}
+
+bool verify_signature(const data_chunk& x_point, const hash_digest& hash,
+    const ec_signature& signature) NOEXCEPT
+{
+    return verify_signature(data_slice{ x_point }, hash, signature);
 }
 
 // BIP341: A Taproot signature is a 64-byte Schnorr sig, as defined in BIP340.

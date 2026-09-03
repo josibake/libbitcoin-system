@@ -155,7 +155,7 @@ bool sign(ec_signature& out, const ec_secret& secret,
 
 // Expects private form `secp256k1_ecdsa_signature` (converts to low-s).
 // This expected signature form is the output of decode_signature(...).
-bool verify_signature(const data_chunk& point, const hash_digest& hash,
+bool verify_signature(const data_slice& point, const hash_digest& hash,
     const ec_signature& signature) NOEXCEPT
 {
     const auto context = ec_context_verify::context();
@@ -163,6 +163,12 @@ bool verify_signature(const data_chunk& point, const hash_digest& hash,
     secp256k1_pubkey pubkey;
     return ec_public_key_parse(context, pubkey, point) &&
         verify_signature(context, pubkey, hash, signature);
+}
+
+bool verify_signature(const data_chunk& point, const hash_digest& hash,
+    const ec_signature& signature) NOEXCEPT
+{
+    return verify_signature(data_slice{ point }, hash, signature);
 }
 
 // Expects private form `secp256k1_ecdsa_signature` (converts to low-s).
