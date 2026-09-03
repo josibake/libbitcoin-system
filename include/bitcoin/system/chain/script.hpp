@@ -73,6 +73,38 @@ public:
     static constexpr bool is_sign_script_hash_pattern(const operations& ops) NOEXCEPT;
     static bool is_coinbase_pattern(const operations& ops, size_t height) NOEXCEPT;
 
+    /// Batchable patterns over owning or borrowed operation ranges.
+    template <typename Range>
+    static constexpr bool is_pay_public_key_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_key_hash_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_multisig_standard_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_taproot_key_path_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_tapscript_single_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_tapscript_timelock_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_tapscript_inscription_pattern(const Range& ops,
+        size_t count, opcode last) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_tapscript_threshold_pattern(const Range& ops,
+        size_t count, opcode last) NOEXCEPT;
+    template <typename Range>
+    static constexpr bool is_pay_tapscript_multisig_pattern(const Range& ops,
+        size_t count) NOEXCEPT;
+    template <typename Range>
+    static constexpr opcode extract_tapscript_threshold(const Range& ops,
+        size_t count, opcode last, size_t& min, size_t& max) NOEXCEPT;
+
     static inline operations to_pay_null_data_pattern(
         const data_slice& data) NOEXCEPT;
     static inline operations to_pay_public_key_pattern(

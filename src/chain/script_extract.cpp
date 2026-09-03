@@ -232,31 +232,8 @@ bool script::extract_sigop_script(script& embedded,
 opcode script::extract_tapscript_threshold(size_t& min,
     size_t& max) const NOEXCEPT
 {
-    if (is_pay_tapscript_multisig_pattern(ops()))
-    {
-        min = max = to_half(ops().size());
-        return opcode::checksig;
-    }
-
-    if (is_pay_tapscript_threshold_pattern(ops()))
-    {
-        uint32_t value{};
-        if (ops().at(ops().size() - 2).as_unsigned32(value))
-        {
-            min = max = value;
-            const auto condition = ops().back().code();
-            if (condition != opcode::within)
-                return condition;
-
-            if (ops().at(ops().size() - 3).as_unsigned32(value))
-            {
-                min = value;
-                return condition;
-            }
-        }
-    }
-
-    return opcode::op_xor;
+    return extract_tapscript_threshold(ops(), ops().size(),
+        ops().empty() ? opcode::op_verif : ops().back().code(), min, max);
 }
 
 } // namespace chain

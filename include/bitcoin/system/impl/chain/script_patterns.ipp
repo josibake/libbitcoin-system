@@ -144,19 +144,39 @@ constexpr bool script::is_pay_op_return_pattern(const operations& ops) NOEXCEPT
 constexpr bool script::is_pay_public_key_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() == 2u
-        && is_public_key(ops[0].data())
-        && ops[1].code() == opcode::checksig;
+    return is_pay_public_key_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_public_key_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count != two)
+        return false;
+
+    auto op = ops.begin();
+    return is_public_key((op++)->data()) &&
+        op->code() == opcode::checksig;
 }
 
 constexpr bool script::is_pay_key_hash_pattern(const operations& ops) NOEXCEPT
 {
-    return ops.size() == 5u
-        && ops[0].code() == opcode::dup
-        && ops[1].code() == opcode::hash160
-        && ops[2].data().size() == short_hash_size
-        && ops[3].code() == opcode::equalverify
-        && ops[4].code() == opcode::checksig;
+    return is_pay_key_hash_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_key_hash_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count != 5u)
+        return false;
+
+    auto op = ops.begin();
+    return (op++)->code() == opcode::dup &&
+        (op++)->code() == opcode::hash160 &&
+        (op++)->data().size() == short_hash_size &&
+        (op++)->code() == opcode::equalverify &&
+        op->code() == opcode::checksig;
 }
 
 // ****************************************************************************
@@ -199,51 +219,90 @@ constexpr bool script::is_pay_witness_taproot_pattern(
 constexpr bool script::is_pay_taproot_key_path_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() == 1u
-        && ops[0].code() == opcode::checksig;
+    return is_pay_taproot_key_path_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_taproot_key_path_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    return is_one(count) && ops.begin()->code() == opcode::checksig;
 }
 
 constexpr bool script::is_pay_tapscript_single_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() == 2u
-        && ops[0].data().size() == ec_xonly_size
-        && ops[1].code() == opcode::checksig;
+    return is_pay_tapscript_single_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_tapscript_single_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count != two)
+        return false;
+
+    auto op = ops.begin();
+    return (op++)->data().size() == ec_xonly_size &&
+        op->code() == opcode::checksig;
 }
 
 constexpr bool script::is_pay_tapscript_timelock_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() == 5u
-        && ops[0].is_nonnegative()
-        && ops[1].is_timelock()
-        && ops[2].code() == opcode::drop
-        && ops[3].data().size() == ec_xonly_size
-        && ops[4].code() == opcode::checksig;
+    return is_pay_tapscript_timelock_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_tapscript_timelock_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count != 5u)
+        return false;
+
+    auto op = ops.begin();
+    return (op++)->is_nonnegative() && (op++)->is_timelock() &&
+        (op++)->code() == opcode::drop &&
+        (op++)->data().size() == ec_xonly_size &&
+        op->code() == opcode::checksig;
 }
 
 constexpr bool script::is_pay_tapscript_inscription_pattern(
     const operations& ops) NOEXCEPT
 {
-    return ops.size() > 4u
-        && ops[0].data().size() == ec_xonly_size
-        && ops[1].code() == opcode::checksig
-        && ops[2].code() == opcode::push_size_0
-        && ops[3].code() == opcode::if_
-        && ops.back().code() == opcode::endif;
+    return is_pay_tapscript_inscription_pattern(ops, ops.size(),
+        ops.empty() ? opcode::op_verif : ops.back().code());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_tapscript_inscription_pattern(const Range& ops,
+    size_t count, opcode last) NOEXCEPT
+{
+    if (count <= 4u || last != opcode::endif)
+        return false;
+
+    auto op = ops.begin();
+    return (op++)->data().size() == ec_xonly_size &&
+        (op++)->code() == opcode::checksig &&
+        (op++)->code() == opcode::push_size_0 &&
+        op->code() == opcode::if_;
 }
 
 constexpr bool script::is_pay_tapscript_threshold_pattern(
     const operations& ops) NOEXCEPT
 {
-    const auto size = ops.size();
-    if (is_zero(size))
-        return false;
+    return is_pay_tapscript_threshold_pattern(ops, ops.size(),
+        ops.empty() ? opcode::op_verif : ops.back().code());
+}
 
+template <typename Range>
+constexpr bool script::is_pay_tapscript_threshold_pattern(const Range& ops,
+    size_t count, opcode last) NOEXCEPT
+{
     // opcode::within requires an additional number in the script.
-    const auto within = (ops.back().code() == opcode::within);
-    if ((is_even(size) == within) ||
-        (size < (4u + to_int<uint8_t>(within))))
+    const auto within = last == opcode::within;
+    if (is_zero(count) || (is_even(count) == within) ||
+        count < (4u + to_int<size_t>(within)))
         return false;
 
     auto op = ops.begin();
@@ -253,68 +312,109 @@ constexpr bool script::is_pay_tapscript_threshold_pattern(
     if ((op++)->code() != opcode::checksig)
         return false;
 
-    while (op != std::prev(ops.end(), 2 + to_int(within)))
-    {
-        if (((op++)->data().size() != ec_xonly_size) ||
-            ((op++)->code() != opcode::checksigadd))
+    const auto stop = count - (2 + to_int<size_t>(within));
+    for (size_t index{ two }; index < stop; index += two)
+        if ((op++)->data().size() != ec_xonly_size ||
+            (op++)->code() != opcode::checksigadd)
             return false;
-    }
 
-    if (!(op++)->is_unsigned32() || (within &&
-        !(op++)->is_unsigned32()))
-        return false;
-
-    return op->is_threshold();
+    return (op++)->is_unsigned32() &&
+        (!within || (op++)->is_unsigned32()) && op->is_threshold();
 }
 
 constexpr bool script::is_pay_tapscript_multisig_pattern(
     const operations& ops) NOEXCEPT
 {
-    if (ops.size() < 2u || !is_even(ops.size()))
+    return is_pay_tapscript_multisig_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_tapscript_multisig_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count < two || !is_even(count))
         return false;
 
     auto op = ops.begin();
-    while (op != std::prev(ops.end(), 2))
-    {
-        if (((op++)->data().size() != ec_xonly_size) ||
-            ((op++)->code() != opcode::checksigverify))
+    for (size_t index{}; index < count - two; index += two)
+        if ((op++)->data().size() != ec_xonly_size ||
+            (op++)->code() != opcode::checksigverify)
             return false;
-    }
 
-    if (((op++)->data().size() != ec_xonly_size) ||
-        ((op++)->code() != opcode::checksig))
-        return false;
-
-    return true;
+    return (op++)->data().size() == ec_xonly_size &&
+        op->code() == opcode::checksig;
 }
 
 constexpr bool script::is_pay_multisig_standard_pattern(
     const operations& ops) NOEXCEPT
 {
-    if (ops.size() < 4u ||
-        ops.back().code() != opcode::checkmultisig)
+    return is_pay_multisig_standard_pattern(ops, ops.size());
+}
+
+template <typename Range>
+constexpr bool script::is_pay_multisig_standard_pattern(const Range& ops,
+    size_t count) NOEXCEPT
+{
+    if (count < 4u)
         return false;
 
-    const auto& m_op = ops.front();
-    const auto& n_op = ops[ops.size() - 2u];
-
-    // Standard form is restricted to minimal encoding.
-    if (!m_op.is_positive() || !n_op.is_positive())
+    auto op = ops.begin();
+    const auto m_code = (op++)->code();
+    if (!operation::is_positive(m_code))
         return false;
 
-    const auto m = operation::opcode_to_positive(m_op.code());
-    const auto n = operation::opcode_to_positive(n_op.code());
-
-    if (is_zero(m) || is_zero(n) || (m > n) || (n > 16u) ||
-        (n != ops.size() - 3u))
+    const auto keys = count - 3u;
+    if (keys > 16u)
         return false;
 
-    // Standard multisig requires valid public key forms.
-    for (auto op = std::next(ops.begin()); op != std::prev(ops.end(), 2); ++op)
-        if (!is_public_key(op->data()))
+    for (size_t index{}; index < keys; ++index)
+        if (!is_public_key((op++)->data()))
             return false;
 
-    return true;
+    const auto n_code = (op++)->code();
+    if (!operation::is_positive(n_code))
+        return false;
+
+    const auto m = operation::opcode_to_positive(m_code);
+    const auto n = operation::opcode_to_positive(n_code);
+    return op->code() == opcode::checkmultisig &&
+        !is_zero(m) && !is_zero(n) && m <= n && n == keys;
+}
+
+template <typename Range>
+constexpr opcode script::extract_tapscript_threshold(const Range& ops,
+    size_t count, opcode last, size_t& min, size_t& max) NOEXCEPT
+{
+    if (is_pay_tapscript_multisig_pattern(ops, count))
+    {
+        min = max = to_half(count);
+        return opcode::checksig;
+    }
+
+    if (!is_pay_tapscript_threshold_pattern(ops, count, last))
+        return opcode::op_xor;
+
+    const auto within = last == opcode::within;
+    auto op = ops.begin();
+    std::advance(op, count - (2 + to_int<size_t>(within)));
+
+    uint32_t lower{};
+    if (!(op++)->as_unsigned32(lower))
+        return opcode::op_xor;
+
+    if (!within)
+    {
+        min = max = lower;
+        return last;
+    }
+
+    uint32_t upper{};
+    if (!(op++)->as_unsigned32(upper))
+        return opcode::op_xor;
+
+    min = lower;
+    max = upper;
+    return last;
 }
 
 // This does not match 0 of n (no signatures to verify).

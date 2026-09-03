@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../../test.hpp"
+#include "../script.hpp"
 
 BOOST_AUTO_TEST_SUITE(script_view_tests)
 
@@ -65,6 +66,26 @@ static void check_matches_script(const data_chunk& encoded)
     BOOST_CHECK_EQUAL(view.is_underflow(), expected.is_underflow());
     BOOST_CHECK_EQUAL(view.is_oversized(), expected.is_oversized());
     BOOST_CHECK_EQUAL(&view.ops(), &view);
+    BOOST_CHECK_EQUAL(view.is_pay_public_key_pattern(),
+        script::is_pay_public_key_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_key_hash_pattern(),
+        script::is_pay_key_hash_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_multisig_standard_pattern(),
+        script::is_pay_multisig_standard_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_taproot_key_path_pattern(),
+        script::is_pay_taproot_key_path_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_tapscript_single_pattern(),
+        script::is_pay_tapscript_single_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_tapscript_timelock_pattern(),
+        script::is_pay_tapscript_timelock_pattern(expected.ops()));
+    BOOST_CHECK_EQUAL(view.is_pay_tapscript_inscription_pattern(),
+        script::is_pay_tapscript_inscription_pattern(expected.ops()));
+
+    size_t expected_min{}, expected_max{}, actual_min{}, actual_max{};
+    BOOST_CHECK(view.extract_tapscript_threshold(actual_min, actual_max) ==
+        expected.extract_tapscript_threshold(expected_min, expected_max));
+    BOOST_CHECK_EQUAL(actual_min, expected_min);
+    BOOST_CHECK_EQUAL(actual_max, expected_max);
 
     size_t position{};
     for (const auto& operation: expected.ops())
@@ -84,6 +105,18 @@ static void check_matches_script(const data_chunk& encoded)
         BOOST_CHECK_EQUAL(actual->is_underflow(), operation.is_underflow());
         BOOST_CHECK_EQUAL(actual->is_conditional(),
             operation.is_conditional());
+        BOOST_CHECK_EQUAL(actual->is_payload(), operation.is_payload());
+        BOOST_CHECK_EQUAL(actual->is_positive(), operation.is_positive());
+        BOOST_CHECK_EQUAL(actual->is_nonnegative(),
+            operation.is_nonnegative());
+        BOOST_CHECK_EQUAL(actual->is_timelock(), operation.is_timelock());
+        BOOST_CHECK_EQUAL(actual->is_threshold(), operation.is_threshold());
+        BOOST_CHECK_EQUAL(actual->is_unsigned32(), operation.is_unsigned32());
+
+        uint32_t expected_unsigned{}, actual_unsigned{};
+        BOOST_CHECK_EQUAL(actual->as_unsigned32(actual_unsigned),
+            operation.as_unsigned32(expected_unsigned));
+        BOOST_CHECK_EQUAL(actual_unsigned, expected_unsigned);
 
         if (!actual->raw().empty())
             BOOST_CHECK_EQUAL(actual->raw().data(), encoded.data() + offset);
@@ -172,6 +205,46 @@ BOOST_AUTO_TEST_CASE(script_view__mixed_valid_then_underflow__matches_script)
     encoded.push_back(static_cast<uint8_t>(opcode::push_two_size));
     encoded.push_back(0x02);
     check_matches_script(encoded);
+}
+
+BOOST_AUTO_TEST_CASE(script_view__batch_patterns__match_script)
+{
+    const auto compressed = base16_chunk(
+        "03dcfd9e580de35d8c2060d76dbf9e5561fe20febd2e64380e860a4d59f15ac864");
+    const auto xonly = to_chunk(ec_xonly{});
+    const auto hash = to_chunk(short_hash{});
+
+    const std::vector<operations> patterns
+    {
+        { operation{ compressed, true }, operation{ opcode::checksig } },
+        { operation{ opcode::dup }, operation{ opcode::hash160 },
+            operation{ hash, false }, operation{ opcode::equalverify },
+            operation{ opcode::checksig } },
+        { operation{ opcode::push_positive_1 },
+            operation{ compressed, true },
+            operation{ opcode::push_positive_1 },
+            operation{ opcode::checkmultisig } },
+        { operation{ opcode::checksig } },
+        { operation{ xonly, true }, operation{ opcode::checksig } },
+        { operation{ opcode::push_positive_1 },
+            operation{ opcode::checklocktimeverify },
+            operation{ opcode::drop }, operation{ xonly, true },
+            operation{ opcode::checksig } },
+        { operation{ xonly, true }, operation{ opcode::checksig },
+            operation{ opcode::push_size_0 }, operation{ opcode::if_ },
+            operation{ opcode::endif } },
+        make_tapscript_threshold_ops(2, 3),
+        { operation{ xonly, true }, operation{ opcode::checksig },
+            operation{ xonly, true }, operation{ opcode::checksigadd },
+            operation{ xonly, true }, operation{ opcode::checksigadd },
+            operation{ opcode::push_positive_1 },
+            operation{ opcode::push_positive_3 },
+            operation{ opcode::within } },
+        make_tapscript_multisig_ops(3)
+    };
+
+    for (const auto& ops: patterns)
+        check_matches_script(script{ ops }.to_data(false));
 }
 
 static data_chunk serialize(const script_subview& view)

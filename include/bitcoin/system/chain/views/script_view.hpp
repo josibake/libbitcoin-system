@@ -25,9 +25,11 @@
 #include <bitcoin/system/chain/enums/magic_numbers.hpp>
 #include <bitcoin/system/chain/enums/opcode.hpp>
 #include <bitcoin/system/chain/operation.hpp>
+#include <bitcoin/system/chain/script.hpp>
 #include <bitcoin/system/constants.hpp>
 #include <bitcoin/system/data/data.hpp>
 #include <bitcoin/system/define.hpp>
+#include <bitcoin/system/machine/number_integer.hpp>
 #include <bitcoin/system/math/math.hpp>
 #include <bitcoin/system/stream/stream.hpp>
 
@@ -98,6 +100,55 @@ public:
     constexpr bool is_conditional() const NOEXCEPT
     {
         return operation::is_conditional(code_);
+    }
+
+    constexpr bool is_payload() const NOEXCEPT
+    {
+        return operation::is_payload(code_);
+    }
+
+    constexpr bool is_positive() const NOEXCEPT
+    {
+        return operation::is_positive(code_);
+    }
+
+    constexpr bool is_nonnegative() const NOEXCEPT
+    {
+        return operation::is_nonnegative(code_);
+    }
+
+    constexpr bool is_timelock() const NOEXCEPT
+    {
+        return operation::is_timelock(code_);
+    }
+
+    constexpr bool is_threshold() const NOEXCEPT
+    {
+        return operation::is_threshold(code_);
+    }
+
+    bool as_unsigned32(uint32_t& value) const NOEXCEPT
+    {
+        if (is_nonnegative())
+        {
+            value = operation::opcode_to_nonnegative(code_);
+            return true;
+        }
+
+        int32_t signed_value{};
+        if (!is_payload() ||
+            !machine::number::integer<4>::from_chunk(signed_value, data_) ||
+            is_limited<uint32_t>(signed_value))
+            return false;
+
+        value = sign_cast<uint32_t>(signed_value);
+        return true;
+    }
+
+    bool is_unsigned32() const NOEXCEPT
+    {
+        uint32_t unused{};
+        return as_unsigned32(unused);
     }
 
 private:
@@ -256,6 +307,8 @@ public:
             prefail_ |= operation::is_invalid(op.code());
             roller_ |= operation::is_roller(op.code());
             underflow_ |= op.is_underflow();
+            last_ = op.code();
+            ++operations_;
         }
     }
 
@@ -339,8 +392,53 @@ public:
         return *this;
     }
 
+    bool is_pay_public_key_pattern() const NOEXCEPT
+    {
+        return script::is_pay_public_key_pattern(*this, operations_);
+    }
+
+    bool is_pay_key_hash_pattern() const NOEXCEPT
+    {
+        return script::is_pay_key_hash_pattern(*this, operations_);
+    }
+
+    bool is_pay_multisig_standard_pattern() const NOEXCEPT
+    {
+        return script::is_pay_multisig_standard_pattern(*this, operations_);
+    }
+
+    bool is_pay_taproot_key_path_pattern() const NOEXCEPT
+    {
+        return script::is_pay_taproot_key_path_pattern(*this, operations_);
+    }
+
+    bool is_pay_tapscript_single_pattern() const NOEXCEPT
+    {
+        return script::is_pay_tapscript_single_pattern(*this, operations_);
+    }
+
+    bool is_pay_tapscript_timelock_pattern() const NOEXCEPT
+    {
+        return script::is_pay_tapscript_timelock_pattern(*this, operations_);
+    }
+
+    bool is_pay_tapscript_inscription_pattern() const NOEXCEPT
+    {
+        return script::is_pay_tapscript_inscription_pattern(*this,
+            operations_, last_);
+    }
+
+    opcode extract_tapscript_threshold(size_t& min,
+        size_t& max) const NOEXCEPT
+    {
+        return script::extract_tapscript_threshold(*this, operations_, last_,
+            min, max);
+    }
+
 private:
     data_slice script_{};
+    size_t operations_{};
+    opcode last_{ opcode::op_verif };
     bool valid_{ false };
     bool roller_{ false };
     bool prefail_{ false };
