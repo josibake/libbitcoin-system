@@ -109,19 +109,11 @@ data_chunk batch_verify(const stopper& cancel, const Batch& batch) NOEXCEPT
 
     if constexpr (is_same_type<Batch, schnorr::batch>)
     {
-        // Avoid results allocation in the almost-always case.
-        if (!ufsecp::lbtc::schnorr_verify_columns(digests, points, sigs, count,
-            nullptr, zero))
-        {
-            results.resize(count);
-
-            BC_PUSH_WARNING(NO_IGNORE_RETURN_VALUE)
-            BC_PUSH_WARNING(DISCARDING_NON_DISCARDABLE)
-            ufsecp::lbtc::schnorr_verify_columns(digests, points, sigs, count,
-                results.data(), zero);
-            BC_POP_WARNING()
-            BC_POP_WARNING()
-        }
+        // Results enable acceleration and avoid a second pass on failure.
+        results.resize(count);
+        if (ufsecp::lbtc::schnorr_verify_columns(digests, points, sigs, count,
+            results.data(), zero))
+            results.clear();
     }
     else
     {
