@@ -192,7 +192,7 @@ code CLASS::connect_witness(const chain::context& state,
             script::cptr script;
             chunk_cptrs_ptr stack;
             if ((ec = input.witness().extract_taproot(tapleaf, script, stack,
-                prevout)))
+                prevout, capture)))
                 return ec;
 
             interpreter program(tx, it, script, flags, version, stack, tapleaf,

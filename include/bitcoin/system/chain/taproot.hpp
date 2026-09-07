@@ -36,6 +36,8 @@ public:
     static hash_digest leaf_hash(uint8_t version,
         const script& script) NOEXCEPT;
     static bool drop_annex(chunk_cptrs& stack) NOEXCEPT;
+    static hash_digest commitment_tweak(const tapscript& control,
+        const hash_digest& leaf) NOEXCEPT;
     static bool verify_commit(const tapscript& control,
         const ec_xonly& out_key, const hash_digest& leaf) NOEXCEPT;
 

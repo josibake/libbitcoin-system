@@ -52,6 +52,18 @@ const ec_signature schnorr_sig = base16_array
     "e907831f80848d1069a5371b402410364bdf1c5f8307b0084c55f1ce2dca8215"
     "25f66a4a85ea8b71e482a74f382d2ce5ebeee8fdb2172f477df4900d310536c0"
 );
+const ec_xonly commitment_internal = base16_array
+(
+    "187791b6f712a8ea41c8ecdd0ee77fab3e85263b37e1ec18a3651926b3a6cf27"
+);
+const hash_digest commitment_tweak = base16_array
+(
+    "cbd8679ba636c1110ea247542cfbd964131a6be84f873f7f3b62a777528ed001"
+);
+const ec_xonly commitment_key = base16_array
+(
+    "147c9c57132f6e7ecddba9800bb0c4449251c92a1e60371ee77557b6620f3ea3"
+);
 
 // schnorr_signatures
 
@@ -114,6 +126,34 @@ BOOST_AUTO_TEST_CASE(signatures__schnorr_signatures__purge__empty)
 {
     schnorr_signatures accumulator{};
     accumulator.append(schnorr_sighash, schnorr_key, schnorr_sig);
+    accumulator.purge();
+    BOOST_REQUIRE(accumulator.empty());
+}
+
+// taproot_commitments
+
+BOOST_AUTO_TEST_CASE(signatures__taproot_commitments__append__expected_row)
+{
+    taproot_commitments accumulator{};
+    accumulator.append(commitment_internal, commitment_tweak,
+        commitment_key, true);
+    BOOST_REQUIRE(!accumulator.empty());
+    BOOST_REQUIRE_EQUAL(accumulator.rows().size(), 1u);
+    BOOST_REQUIRE_EQUAL(accumulator.rows().front().internal_key,
+        commitment_internal);
+    BOOST_REQUIRE_EQUAL(accumulator.rows().front().tweak, commitment_tweak);
+    BOOST_REQUIRE_EQUAL(accumulator.rows().front().tweaked_key,
+        commitment_key);
+    BOOST_REQUIRE_EQUAL(accumulator.rows().front().parity, true);
+    BOOST_REQUIRE(accumulator.verify());
+}
+
+BOOST_AUTO_TEST_CASE(signatures__taproot_commitments__invalid__false)
+{
+    taproot_commitments accumulator{};
+    accumulator.append(commitment_internal, commitment_tweak,
+        commitment_internal, true);
+    BOOST_REQUIRE(!accumulator.verify());
     accumulator.purge();
     BOOST_REQUIRE(accumulator.empty());
 }
@@ -234,18 +274,24 @@ BOOST_AUTO_TEST_CASE(signatures__signatures__thread_statics__stable_and_purgeabl
 {
     auto& ecdsa = signatures::ecdsa_rows();
     auto& schnorr = signatures::schnorr_rows();
+    auto& commitments = signatures::commitment_rows();
     BOOST_REQUIRE_EQUAL(&signatures::ecdsa_rows(), &ecdsa);
     BOOST_REQUIRE_EQUAL(&signatures::schnorr_rows(), &schnorr);
+    BOOST_REQUIRE_EQUAL(&signatures::commitment_rows(), &commitments);
 
     const signatures capture{ .enabled = true };
     BOOST_REQUIRE(capture.ecdsa(ecdsa_sighash, ecdsa_key, ecdsa_sig));
     BOOST_REQUIRE(capture.schnorr(schnorr_sighash, schnorr_key, schnorr_sig));
+    BOOST_REQUIRE(capture.commitment(commitment_internal, commitment_tweak,
+        commitment_key, true));
     BOOST_REQUIRE_EQUAL(ecdsa.groups(), 1u);
     BOOST_REQUIRE_EQUAL(schnorr.rows().size(), 1u);
+    BOOST_REQUIRE_EQUAL(commitments.rows().size(), 1u);
 
     signatures::purge();
     BOOST_REQUIRE(ecdsa.empty());
     BOOST_REQUIRE(schnorr.empty());
+    BOOST_REQUIRE(commitments.empty());
 }
 
 BOOST_AUTO_TEST_CASE(signatures__signatures__threshold_cursor__appends_rows)

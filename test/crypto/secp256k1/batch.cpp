@@ -386,6 +386,58 @@ BOOST_AUTO_TEST_CASE(secp256k1__schnorr_batch_verify__single_one_invalid__expect
     BOOST_REQUIRE_EQUAL(tokens.front(), from_little_array<batched::link_t>(correlates.at(1).id));
 }
 
+// batch taproot commitment
+// ----------------------------------------------------------------------------
+
+BOOST_AUTO_TEST_CASE(secp256k1__commitment_batch_verify__valid__expected)
+{
+    using namespace system;
+    using namespace system::commitment;
+    using correlate = batch::correlate_t;
+
+    const std::array<correlate, 1> correlates{ correlate{ { 7, 0, 0 } } };
+    const std::array<ec_xonly, 1> internal_keys{ base16_array(
+        "187791b6f712a8ea41c8ecdd0ee77fab3e85263b37e1ec18a3651926b3a6cf27") };
+    const std::array<hash_digest, 1> tweaks{ base16_array(
+        "cbd8679ba636c1110ea247542cfbd964131a6be84f873f7f3b62a777528ed001") };
+    const std::array<ec_xonly, 1> tweaked_keys{ base16_array(
+        "147c9c57132f6e7ecddba9800bb0c4449251c92a1e60371ee77557b6620f3ea3") };
+    const std::array<uint8_t, 1> parities{ true };
+    const batch in
+    {
+        correlates, internal_keys, tweaks, tweaked_keys, parities
+    };
+
+    const stopper cancel{};
+    BOOST_REQUIRE(batch::verify(cancel, in).empty());
+}
+
+BOOST_AUTO_TEST_CASE(secp256k1__commitment_batch_verify__curve_order__invalid)
+{
+    using namespace system;
+    using namespace system::commitment;
+    using correlate = batch::correlate_t;
+
+    const auto internal = base16_array(
+        "187791b6f712a8ea41c8ecdd0ee77fab3e85263b37e1ec18a3651926b3a6cf27");
+    const std::array<correlate, 1> correlates{ correlate{ { 7, 0, 0 } } };
+    const std::array<ec_xonly, 1> internal_keys{ internal };
+    const std::array<hash_digest, 1> tweaks{ base16_array(
+        "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141") };
+    const std::array<ec_xonly, 1> tweaked_keys{ internal };
+    const std::array<uint8_t, 1> parities{ false };
+    const batch in
+    {
+        correlates, internal_keys, tweaks, tweaked_keys, parities
+    };
+
+    const stopper cancel{};
+    const auto tokens = batch::verify(cancel, in);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 1u);
+    BOOST_REQUIRE_EQUAL(tokens.front(),
+        from_little_array<batched::link_t>(correlates.front().id));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BC_POP_WARNING()

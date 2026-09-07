@@ -173,6 +173,43 @@ BOOST_AUTO_TEST_CASE(witness__extract_taproot__tapscript_uncommitted__invalid_co
     BOOST_REQUIRE_EQUAL(instance.extract_taproot(leaf, out, stack, prevout), error::invalid_commitment);
 }
 
+BOOST_AUTO_TEST_CASE(witness__extract_taproot__capture_committed__deferred)
+{
+    signatures::purge();
+    const signatures capture{ .enabled = true };
+    hash_cptr leaf{};
+    script::cptr out{};
+    chunk_cptrs_ptr stack{};
+    const auto prevout = taproot_prevout(c0_program);
+    const auto instance = script_path(c0_control);
+
+    BOOST_REQUIRE_EQUAL(instance.extract_taproot(leaf, out, stack, prevout,
+        capture), error::script_success);
+    BOOST_REQUIRE(capture.batched.load());
+    BOOST_REQUIRE(!capture.faulted.load());
+    BOOST_REQUIRE_EQUAL(signatures::commitment_rows().rows().size(), 1u);
+    BOOST_REQUIRE(signatures::commitment_rows().verify());
+    signatures::purge();
+}
+
+BOOST_AUTO_TEST_CASE(witness__extract_taproot__capture_uncommitted__deferred)
+{
+    signatures::purge();
+    const signatures capture{ .enabled = true };
+    hash_cptr leaf{};
+    script::cptr out{};
+    chunk_cptrs_ptr stack{};
+    const auto prevout = taproot_prevout(c2_program);
+    const auto instance = script_path(c0_control);
+
+    BOOST_REQUIRE_EQUAL(instance.extract_taproot(leaf, out, stack, prevout,
+        capture), error::script_success);
+    BOOST_REQUIRE(capture.batched.load());
+    BOOST_REQUIRE_EQUAL(signatures::commitment_rows().rows().size(), 1u);
+    BOOST_REQUIRE(!signatures::commitment_rows().verify());
+    signatures::purge();
+}
+
 // The commitment binds all leaf versions, so an undefined version is not
 // unencumbered until its control block commits to the output key [bip341].
 BOOST_AUTO_TEST_CASE(witness__extract_taproot__undefined_leaf_version_committed__success_unencumbered)

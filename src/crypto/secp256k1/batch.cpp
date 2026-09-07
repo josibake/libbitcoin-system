@@ -163,6 +163,49 @@ data_chunk batch_verify(const stopper& cancel, const Batch& batch) NOEXCEPT
 
 #endif
 
+data_chunk commitment_batch_verify(const stopper& cancel,
+    const commitment::batch& batch) NOEXCEPT
+{
+    const auto count = batch.correlates.size();
+    data_chunk results{};
+    if (cancel)
+        return results;
+
+    results.resize(count);
+#if defined(HAVE_ULTRAFAST)
+    const auto internal = pointer_cast<const uint8_t>(
+        batch.internal_keys.data());
+    const auto tweaks = pointer_cast<const uint8_t>(batch.tweaks.data());
+    const auto tweaked = pointer_cast<const uint8_t>(
+        batch.tweaked_keys.data());
+    const auto parities = pointer_cast<const uint8_t>(batch.parities.data());
+
+    if (ufsecp::lbtc::taproot_commitment_verify_batch(internal, tweaks,
+        tweaked, parities, count, results.data(), zero))
+        results.clear();
+#else
+    constexpr auto policy = poolstl::execution::par;
+    std::vector<size_t> it(count);
+    std::iota(it.begin(), it.end(), zero);
+    stopper failed{};
+
+    std::for_each(policy, it.cbegin(), it.cend(), [&](size_t row) NOEXCEPT
+    {
+        if (cancel) return;
+        const auto good = schnorr::verify_commitment(
+            batch.internal_keys[row], batch.tweaks[row],
+            batch.tweaked_keys[row], to_bool(batch.parities[row]));
+        if (!good) failed.store(true);
+        results.at(row) = to_int<uint8_t>(good);
+    });
+
+    if (cancel || !failed)
+        results.clear();
+#endif
+
+    return results;
+}
+
 // local
 // ----------------------------------------------------------------------------
 
@@ -287,6 +330,26 @@ links_t schnorr::batch::get_failures(const stopper& cancel,
     return distinct(std::move(fails));
 }
 
+// get_failures (commitment)
+// ----------------------------------------------------------------------------
+
+links_t commitment::batch::get_failures(const stopper& cancel,
+    const data_chunk& out, const batch& in) NOEXCEPT
+{
+    const auto& correlates = in.correlates;
+    BC_ASSERT(out.empty() || out.size() == correlates.size());
+
+    links_t fails{};
+    if (out.empty())
+        return fails;
+
+    for (size_t row{}; row < correlates.size() && !cancel; ++row)
+        if (!to_bool(out.at(row)))
+            push_fail(fails, correlates[row].id);
+
+    return distinct(std::move(fails));
+}
+
 // get_match (silent)
 // ----------------------------------------------------------------------------
 
@@ -313,6 +376,12 @@ data_chunk schnorr::batch::evaluate(const stopper& cancel,
     return batch_verify(cancel, batch);
 }
 
+data_chunk commitment::batch::evaluate(const stopper& cancel,
+    const batch& batch) NOEXCEPT
+{
+    return commitment_batch_verify(cancel, batch);
+}
+
 // correlate
 // ----------------------------------------------------------------------------
 // static/protected
@@ -329,6 +398,12 @@ links_t schnorr::batch::correlate(const stopper& cancel,
     return get_failures(cancel, out, in);
 }
 
+links_t commitment::batch::correlate(const stopper& cancel,
+    const data_chunk& out, const batch& in) NOEXCEPT
+{
+    return get_failures(cancel, out, in);
+}
+
 // verify
 // ----------------------------------------------------------------------------
 // static/public
@@ -340,6 +415,12 @@ links_t ecdsa::batch::verify(const stopper& cancel,
 }
 
 links_t schnorr::batch::verify(const stopper& cancel,
+    const batch& batch) NOEXCEPT
+{
+    return correlate(cancel, evaluate(cancel, batch), batch);
+}
+
+links_t commitment::batch::verify(const stopper& cancel,
     const batch& batch) NOEXCEPT
 {
     return correlate(cancel, evaluate(cancel, batch), batch);

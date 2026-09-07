@@ -18,6 +18,7 @@
  */
 #include <bitcoin/system/chain/witness.hpp>
 
+#include <bitcoin/system/chain/batch/signatures.hpp>
 #include <bitcoin/system/chain/enums/script_version.hpp>
 #include <bitcoin/system/chain/enums/opcode.hpp>
 #include <bitcoin/system/chain/operation.hpp>
@@ -168,6 +169,14 @@ code witness::extract_segwit(script::cptr& out_script,
 code witness::extract_taproot(hash_cptr& out_leaf, script::cptr& out_script,
     chunk_cptrs_ptr& out_stack, const script& program_script) const NOEXCEPT
 {
+    return extract_taproot(out_leaf, out_script, out_stack, program_script,
+        signatures{});
+}
+
+code witness::extract_taproot(hash_cptr& out_leaf, script::cptr& out_script,
+    chunk_cptrs_ptr& out_stack, const script& program_script,
+    const signatures& capture) const NOEXCEPT
+{
     BC_ASSERT(program_script.version() == script_version::taproot);
     const auto& program = program_script.witness_program();
 
@@ -204,8 +213,21 @@ code witness::extract_taproot(hash_cptr& out_leaf, script::cptr& out_script,
             // Execute tapleaf script.
             // out stack  : [stack-elements]
             // out script : (popped-from-stack)
-            if (!taproot::verify_commit(control, key, leaf))
-                return error::invalid_commitment;
+            const auto tweak = taproot::commitment_tweak(control, leaf);
+            if (capture.enabled && capture.commitment(control.key(), tweak,
+                key, control.parity()))
+            {
+                capture.batched.store(true, std::memory_order_relaxed);
+            }
+            else
+            {
+                if (capture.enabled)
+                    capture.faulted.store(true, std::memory_order_relaxed);
+
+                if (!schnorr::verify_commitment(control.key(), tweak, key,
+                    control.parity()))
+                    return error::invalid_commitment;
+            }
 
             if (control.is_tapscript())
             {

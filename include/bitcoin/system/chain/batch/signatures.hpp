@@ -36,7 +36,7 @@ namespace chain {
 
 BC_PUSH_WARNING(NO_USE_OF_SPAN)
 
-/// Thread-static per-block signature capture accumulators. An accumulator is
+/// Thread-static per-block validation capture accumulators. An accumulator is
 /// populated by one block's sequential connect (single-threaded, lock-free)
 /// and bulk-committed to the corresponding store table upon its completion,
 /// deinterleaving the AoS log into the store's SoA columns. Capacity is
@@ -300,14 +300,70 @@ private:
     size_t keys_{};
 };
 
-/// A capture context passed into machine::interpreter. When enabled, sigops
-/// in fully-determining scripts append signature rows to this thread's
-/// accumulators and fabricate success. The caller bulk-commits the
-/// accumulators to store upon block connect completion and batch-validates
-/// at drain, correlating block failure. Appends cannot decline on store
-/// state; the only decline is the ecdsa group id domain (uint16), so the
-/// affected sigop falls through to inline verification and block validity is
-/// always fully determined (`faulted` is telemetry only).
+/// Accumulator of captured Taproot script-path commitment checks.
+class taproot_commitments
+{
+public:
+    struct row
+    {
+        ec_xonly internal_key;
+        hash_digest tweak;
+        ec_xonly tweaked_key;
+        uint8_t parity;
+    };
+
+    inline void append(const ec_xonly& internal_key, const hash_digest& tweak,
+        const ec_xonly& tweaked_key, bool parity) NOEXCEPT
+    {
+        rows_.push_back(row
+        {
+            internal_key, tweak, tweaked_key, to_int<uint8_t>(parity)
+        });
+    }
+
+    inline std::span<const row> rows() const NOEXCEPT
+    {
+        return rows_;
+    }
+
+    inline bool empty() const NOEXCEPT
+    {
+        return rows_.empty();
+    }
+
+    inline bool verify() const NOEXCEPT
+    {
+        return std::all_of(rows_.begin(), rows_.end(),
+            [](const row& record) NOEXCEPT
+            {
+                return schnorr::verify_commitment(record.internal_key,
+                    record.tweak, record.tweaked_key, to_bool(record.parity));
+            });
+    }
+
+    inline void clear() NOEXCEPT
+    {
+        rows_.clear();
+    }
+
+    inline void purge() NOEXCEPT
+    {
+        clear();
+        rows_.shrink_to_fit();
+    }
+
+private:
+    std::vector<row> rows_{};
+};
+
+/// A capture context passed into machine::interpreter. When enabled,
+/// fully-determining scripts append deferred verification rows to this
+/// thread's accumulators and fabricate success. The caller bulk-commits the
+/// accumulators to store upon block connect completion and batch-validates at
+/// drain, correlating block failure. Appends cannot decline on store state;
+/// the only decline is the ecdsa group id domain (uint16), so the affected
+/// sigop falls through to inline verification and block validity is always
+/// fully determined (`faulted` is telemetry only).
 struct BC_API signatures
 {
     /// Reporting enumeration for capture misses.
@@ -320,6 +376,7 @@ struct BC_API signatures
     /// This thread's accumulators (self-registered upon first access).
     static ecdsa_signatures& ecdsa_rows() NOEXCEPT;
     static schnorr_signatures& schnorr_rows() NOEXCEPT;
+    static taproot_commitments& commitment_rows() NOEXCEPT;
 
     /// Release the capacity of all threads' accumulators (batching
     /// subsided). Caller must exclude capture (e.g. post to the validation
@@ -332,6 +389,8 @@ struct BC_API signatures
         const ec_signature& signature) const NOEXCEPT;
     bool schnorr(const hash_digest& digest, const ec_xonly& point,
         const ec_signature& signature) const NOEXCEPT;
+    bool commitment(const ec_xonly& internal_key, const hash_digest& tweak,
+        const ec_xonly& tweaked_key, bool parity) const NOEXCEPT;
 
     /// Multisig capture: one group record, keys.size() = n, sigs.size() = m;
     /// the store expands the band upon commit.
@@ -359,7 +418,7 @@ struct BC_API signatures
     /// A capture decline occurred (block validity intact, telemetry only).
     mutable std::atomic_bool faulted{};
 
-    /// Signatures were batched for the block.
+    /// Verifications were batched for the block.
     mutable std::atomic_bool batched{};
 };
 

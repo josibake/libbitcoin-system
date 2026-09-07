@@ -31,6 +31,8 @@ namespace libbitcoin {
 namespace system {
 namespace chain {
 
+struct signatures;
+
 class BC_API witness
 {
 public:
@@ -115,6 +117,9 @@ public:
         const script& program_script) const NOEXCEPT;
     code extract_taproot(hash_cptr& out_leaf, script::cptr& out_script,
         chunk_cptrs_ptr& out_stack, const script& program_script) const NOEXCEPT;
+    code extract_taproot(hash_cptr& out_leaf, script::cptr& out_script,
+        chunk_cptrs_ptr& out_stack, const script& program_script,
+        const signatures& capture) const NOEXCEPT;
 
 protected:
     witness(stream::in::fast&& stream, bool prefix) NOEXCEPT;

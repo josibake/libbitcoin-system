@@ -37,6 +37,7 @@ struct signature_registry
     std::mutex mutex{};
     std::vector<ecdsa_signatures*> ecdsa{};
     std::vector<schnorr_signatures*> schnorr{};
+    std::vector<taproot_commitments*> commitments{};
 };
 
 static signature_registry& registry() NOEXCEPT
@@ -76,6 +77,21 @@ schnorr_signatures& signatures::schnorr_rows() NOEXCEPT
 }
 
 // static
+taproot_commitments& signatures::commitment_rows() NOEXCEPT
+{
+    static thread_local taproot_commitments rows{};
+    [[maybe_unused]] static thread_local const auto once = [&]() NOEXCEPT
+    {
+        auto& self = registry();
+        const std::unique_lock lock{ self.mutex };
+        self.commitments.push_back(&rows);
+        return true;
+    }();
+
+    return rows;
+}
+
+// static
 void signatures::purge() NOEXCEPT
 {
     auto& self = registry();
@@ -84,6 +100,9 @@ void signatures::purge() NOEXCEPT
         rows->purge();
 
     for (const auto rows: self.schnorr)
+        rows->purge();
+
+    for (const auto rows: self.commitments)
         rows->purge();
 }
 
@@ -103,6 +122,15 @@ bool signatures::schnorr(const hash_digest& digest, const ec_xonly& point,
 {
     BC_ASSERT(enabled);
     schnorr_rows().append(digest, point, signature);
+    return true;
+}
+
+bool signatures::commitment(const ec_xonly& internal_key,
+    const hash_digest& tweak, const ec_xonly& tweaked_key, bool parity) const
+    NOEXCEPT
+{
+    BC_ASSERT(enabled);
+    commitment_rows().append(internal_key, tweak, tweaked_key, parity);
     return true;
 }
 

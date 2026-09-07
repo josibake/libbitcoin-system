@@ -110,6 +110,38 @@ protected:
 
 } // namespace schnorr
 
+namespace commitment {
+
+/// Span matches captured Taproot commitment columns.
+struct BC_API batch
+{
+#pragma pack(push, 1)
+    struct correlate_t
+    {
+        batched::link id;
+    };
+#pragma pack(pop)
+
+    static batched::links_t verify(const stopper& cancel,
+        const batch& batch) NOEXCEPT;
+
+    std::span<const correlate_t> correlates;
+    std::span<const ec_xonly> internal_keys;
+    std::span<const hash_digest> tweaks;
+    std::span<const ec_xonly> tweaked_keys;
+    std::span<const uint8_t> parities;
+
+protected:
+    static batched::links_t get_failures(const stopper& cancel,
+        const data_chunk& out, const batch& in) NOEXCEPT;
+    static data_chunk evaluate(const stopper& cancel,
+        const batch& batch) NOEXCEPT;
+    static batched::links_t correlate(const stopper& cancel,
+        const data_chunk& out, const batch& batch) NOEXCEPT;
+};
+
+} // namespace commitment
+
 namespace silent
 {
 
