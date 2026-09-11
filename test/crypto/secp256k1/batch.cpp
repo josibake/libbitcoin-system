@@ -438,6 +438,32 @@ BOOST_AUTO_TEST_CASE(secp256k1__commitment_batch_verify__curve_order__invalid)
         from_little_array<batched::link_t>(correlates.front().id));
 }
 
+BOOST_AUTO_TEST_CASE(secp256k1__commitment_batch_verify__infinity__invalid)
+{
+    using namespace system;
+    using namespace system::commitment;
+    using correlate = batch::correlate_t;
+
+    const std::array<correlate, 1> correlates{ correlate{ { 7, 0, 0 } } };
+    const std::array<ec_xonly, 1> internal_keys{ base16_array(
+        "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798") };
+    const std::array<hash_digest, 1> tweaks{ base16_array(
+        "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140") };
+    const std::array<ec_xonly, 1> tweaked_keys{ base16_array(
+        "0000000000000000000000000000000000000000000000000000000000000000") };
+    const std::array<uint8_t, 1> parities{ false };
+    const batch in
+    {
+        correlates, internal_keys, tweaks, tweaked_keys, parities
+    };
+
+    const stopper cancel{};
+    const auto tokens = batch::verify(cancel, in);
+    BOOST_REQUIRE_EQUAL(tokens.size(), 1u);
+    BOOST_REQUIRE_EQUAL(tokens.front(),
+        from_little_array<batched::link_t>(correlates.front().id));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BC_POP_WARNING()
