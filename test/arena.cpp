@@ -87,38 +87,39 @@ BOOST_AUTO_TEST_CASE(arena__is_equal__same__expected)
 BOOST_AUTO_TEST_CASE(default_arena__allocate1__non_zero_bytes__non_null_allocation)
 {
     default_arena instance{};
-    const auto ptr = instance.allocate(42);
+    constexpr auto bytes = 42_size;
+    const auto ptr = instance.allocate(bytes);
     BOOST_REQUIRE(!is_null(ptr));
 
-    // Clean up unfaked allocation.
-    ::operator delete(ptr);
+    instance.deallocate(ptr, bytes);
 }
 
 BOOST_AUTO_TEST_CASE(default_arena__allocate2__non_zero_bytes_max_align__non_null_allocation)
 {
     default_arena instance{};
-    const auto ptr = instance.allocate(42, alignof(max_align_t));
+    constexpr auto bytes = 42_size;
+    constexpr auto align = alignof(max_align_t);
+    const auto ptr = instance.allocate(bytes, align);
     BOOST_REQUIRE(!is_null(ptr));
 
-    // Clean up unfaked allocation.
-    ::operator delete(ptr);
+    instance.deallocate(ptr, bytes, align);
 }
 
 // "The effect of dereferencing a pointer returned as a request for zero size is undefined."
 BOOST_AUTO_TEST_CASE(default_arena__allocate__zero_bytes__non_null)
 {
-    const auto ptr = default_arena{}.allocate(0);
+    default_arena instance{};
+    const auto ptr = instance.allocate(0);
     BOOST_REQUIRE(!is_null(ptr));
 
-    // Clean up unfaked allocation (even though it was empty this would otherwise be a leak).
-    ::operator delete(ptr);
+    instance.deallocate(ptr, 0);
 }
 
 BOOST_AUTO_TEST_CASE(default_arena__deallocate1__non_zero_bytes__does_not_throw)
 {
     default_arena instance{};
     constexpr auto bytes = 42_size;
-    auto ptr = ::operator new(bytes);
+    auto ptr = instance.allocate(bytes);
     BOOST_REQUIRE_NO_THROW(instance.deallocate(ptr, bytes));
     ptr = nullptr;
 }
@@ -127,8 +128,9 @@ BOOST_AUTO_TEST_CASE(default_arena__deallocate2__non_zero_bytes_max_align__does_
 {
     default_arena instance{};
     constexpr auto bytes = 42_size;
-    auto ptr = ::operator new(bytes);
-    BOOST_REQUIRE_NO_THROW(instance.deallocate(ptr, bytes, alignof(max_align_t)));
+    constexpr auto align = alignof(max_align_t);
+    auto ptr = instance.allocate(bytes, align);
+    BOOST_REQUIRE_NO_THROW(instance.deallocate(ptr, bytes, align));
     ptr = nullptr;
 }
 
