@@ -120,8 +120,26 @@ bool taproot::drop_annex(chunk_cptrs& stack) NOEXCEPT
 hash_digest taproot::commitment_tweak(const tapscript& control,
     const hash_digest& leaf) NOEXCEPT
 {
-    const auto root = merkle_root(control.keys(), control.count(), leaf);
-    return tweak_hash(control.key(), root);
+    return commitment_tweak(control.data(), leaf);
+}
+
+hash_digest taproot::commitment_tweak(const data_slice& control,
+    const hash_digest& leaf) NOEXCEPT
+{
+    BC_ASSERT(tapscript::is_control(control));
+
+    constexpr auto key_begin = one;
+    constexpr auto path_begin = add1(ec_xonly_size);
+    const auto& key = unsafe_array_cast<uint8_t, ec_xonly_size>(
+        std::next(control.begin(), key_begin));
+
+    auto root = leaf;
+    for (auto path = std::next(control.begin(), path_begin);
+        path != control.end(); std::advance(path, ec_xonly_size))
+        root = sorted_branch_hash(root,
+            unsafe_array_cast<uint8_t, ec_xonly_size>(path));
+
+    return tweak_hash(key, root);
 }
 
 bool taproot::verify_commit(const tapscript& control, const ec_xonly& out_key,
@@ -137,17 +155,9 @@ bool taproot::verify_commit(const data_slice& control, const ec_xonly& out_key,
         return false;
 
     constexpr auto key_begin = one;
-    constexpr auto path_begin = add1(ec_xonly_size);
     const auto& key = unsafe_array_cast<uint8_t, ec_xonly_size>(
         std::next(control.begin(), key_begin));
-
-    auto root = leaf;
-    for (auto path = std::next(control.begin(), path_begin);
-        path != control.end(); std::advance(path, ec_xonly_size))
-        root = sorted_branch_hash(root,
-            unsafe_array_cast<uint8_t, ec_xonly_size>(path));
-
-    const auto tweak = tweak_hash(key, root);
+    const auto tweak = commitment_tweak(control, leaf);
     constexpr auto parity_mask = bit_not(tapscript_mask);
     const auto parity = to_bool(bit_and(control.front(), parity_mask));
     return schnorr::verify_commitment(key, tweak, out_key, parity);

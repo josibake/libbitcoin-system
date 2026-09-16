@@ -154,7 +154,7 @@ public:
 
     code extract_taproot(hash_cptr& out_leaf, script_handle& out_script,
         witness& out_stack, const script_handle& program,
-        const signatures& capture) const NOEXCEPT
+        const chain::signatures& capture) const NOEXCEPT
     {
         return input().witness().extract_taproot(out_leaf, out_script,
             out_stack, *program, capture);

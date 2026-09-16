@@ -42,6 +42,10 @@ public:
     static bool drop_annex(chunk_cptrs& stack) NOEXCEPT;
     static hash_digest commitment_tweak(const tapscript& control,
         const hash_digest& leaf) NOEXCEPT;
+    /// The control view must satisfy tapscript::is_control and remain alive
+    /// only for the duration of this call.
+    static hash_digest commitment_tweak(const data_slice& control,
+        const hash_digest& leaf) NOEXCEPT;
     static bool verify_commit(const tapscript& control,
         const ec_xonly& out_key, const hash_digest& leaf) NOEXCEPT;
     static bool verify_commit(const data_slice& control,
